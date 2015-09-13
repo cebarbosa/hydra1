@@ -21,7 +21,7 @@ from config import *
 from load_templates import stellar_templates, emission_templates, \
                             wavelength_array
  
-def run_ppxf(spectra, velscale):
+def run_ppxf(spectra, velscale, ncomp=2):
     """ Run pPXF in a list of spectra"""
     ##########################################################################
     # Load templates for both stars and gas
@@ -30,22 +30,17 @@ def run_ppxf(spectra, velscale):
     ##########################################################################
     # Join templates and set components for fit
     templates = np.column_stack((star_templates, gas_templates))
-    components = np.hstack((np.zeros(len(star_templates[0])),
-                            np.ones(len(gas_templates[0]))))
-    # Single component
-    # templates = star_templates.copy()
-    # components = np.zeros_like(templates)
-    # templates_names = miles
-    # components = np.zeros(len(templates))
-    templates_names = np.hstack((miles, gas_files))
-    ##########################################################################
-    # Adapt guesses for the case there are more than one component
-    comps = np.unique(components)
-    if len(comps) == 1:
-        components=0
+    if ncomp == 1:
+        components = 0
         moments = [4]
-    else:
+    elif ncomp == 2:
+        components = np.hstack((np.zeros(len(star_templates[0])),
+                                np.ones(len(gas_templates[0]))))
         moments = [4,2]
+
+    else:
+        raise Exception("ncomp has to be 1 or 2.")
+    templates_names = np.hstack((miles, gas_files))
     for i, spec in enumerate(spectra):
         print "pPXF run of spectrum {0} ({1} of {2})".format(spec, i+1,
               len(spectra))
@@ -78,9 +73,8 @@ def run_ppxf(spectra, velscale):
         start, goodPixels = read_setup_file(spec, logLam1, mask_emline=False)
         ######################################################################
         # Expand start variable to include multiple components
-        if len(comps) > 1:
-            start = np.tile(start, len(comps)).reshape(len(comps),2)
-            start[1,1] = 30.
+        if ncomp > 1:
+            start = [start, [start[0], 30]]
         ######################################################################
         # First pPXF interaction
         pp0 = ppxf(templates, galaxy, noise, velscale, start,
@@ -93,7 +87,6 @@ def run_ppxf(spectra, velscale):
         pp = ppxf(templates, galaxy, noise0, velscale, start,
                   goodpixels=goodPixels, plot=False, moments=moments,
                   degree=12, mdegree=-1, vsyst=dv, component=components)
-        raw_input(pp.sol)
         pp.template_files = templates_names
         pp.star = 0
         ######################################################################
@@ -141,49 +134,71 @@ def read_setup_file(gal, logw, mask_emline=True):
         good.sort()
         return start, good
 
-def make_table(spectra, outfile):
-    """ Make table with results. """
+def make_table(spectra, output, mc=False, nsim=200, clean=True, pkls=None):
+    """ Make table with results.
+
+    ===================
+    Input Parameters
+    ===================
+    spectra : list
+        Names of the spectra to be processed. Should end in "fits".
+    mc : bool
+        Calculate the errors using a Monte Carlo method.
+    nsim : int
+        Number of simulations in case mc keyword is True.
+    clean : bool
+        Remove lines for which the velocity dispersion is 1000 km/s.
+    pkls : list
+        Specify list of pkl files to be used. Default value replaces fits for
+        pkl
+    ==================
+    Output file
+    ==================
+    In case mc is False, the function produces a file called ppxf_results.dat.
+    Otherwise, the name of the file is named ppfx_results_mc_nsim.dat.
+
+    """
+    print "Producing summary table..."
     head = ("{0:<30}{1:<14}{2:<14}{3:<14}{4:<14}{5:<14}{6:<14}{7:<14}"
-             "{8:<14}{9:<14}{10:<14}\n".format("# FILE", "V", "dV", "S", 
-              "dS", "h3", "dh3", "h4", "dh4", "chi/DOF", "S/N (/ pixel)"))
+             "{8:<14}{9:<14}{10:<14}{11:<14}{12:<14}{13:<14}\n".format("# FILE",
+             "V", "dV", "S", "dS", "h3", "dh3", "h4", "dh4", "chi/DOF",
+             "S/N (/ pixel)", "ADEGREE", "MDEGREE", "100*S/N/sigma"))
     results = []
-    for spec in spectra:
-        pkl = spec.replace(".fits", ".pkl") 
-        if not os.path.exists(pkl):
+    ##########################################################################
+    # Initiate the output file
+    ##########################################################################
+    with open(output, "w") as f:
+        f.write(head)
+    ##########################################################################
+    if pkls== None:
+        pkls = [x.replace(".fits", ".pkl") for x in spectra]
+    for i, (spec, pkl) in enumerate(zip(spectra, pkls)):
+        print "Working on spectra {0} ({1} / {2})".format(spec, i+1,
+                                                          len(spectra))
+        if not os.path.exists(spec.replace(".fits", ".pkl")):
             continue
-        with open(pkl) as f:
-            pp = pickle.load(f)
-        rms = pp.galaxy - pp.bestfit
-        noise = 1.4826 * np.median(np.abs(rms - np.median(rms)))
-        signal = np.sum(pp.galaxy[pp.goodpixels]) / len(pp.goodpixels)
-        sn = signal / noise
-        comment = "#" if pp.error[1] == 0.0 else ""
-        comment = ""
-        line = [spec, pp.sol[0], pp.error[0],
+        pp = pPXF(spec, velscale, pklfile=pkl)
+        pp.calc_sn()
+        sn = pp.sn
+        if mc:
+            pp.mc_errors(nsim=nsim)
+        if pp.ncomp > 1:
+            pp.sol = pp.sol[0]
+            pp.error = pp.error[0]
+        data = [pp.sol[0], pp.error[0],
                 pp.sol[1], pp.error[1], pp.sol[2], pp.error[2], pp.sol[3],
                 pp.error[3], pp.chi2, sn]
-        results.append(line)
-    results = np.array(results)
-    with open(outfile, "w") as f:
-        f.write(head)
-        np.savetxt(f, results, fmt="%.30s")
-    return
-
-def em_analysis(spectra):
-    for spec in spectra:
-        with open(spec.replace(".fits", ".pkl")) as f:
-            pp = pickle.load(f)
-        print spec, pp.sol[1],
-        weights = pp.weights.copy()
-        weights[:-3] = 0.
-        em = pp.matrix.dot(weights) / pp.noise
-        print em.max()
-        plt.ion()
-        plt.plot(em, "-k")
-        plt.pause(0.001)
-        plt.show()
-        raw_input()
-        plt.clf()
+        data = ["{0:12.3f} ".format(x) for x in data]
+        if clean and pp.sol[1] == 1000.:
+            comment = "#"
+        else:
+            comment = ""
+        line = ["{0}{1}".format(comment, spec)] + data + \
+               ["{0:12}".format(pp.degree), "{0:12}".format(pp.mdegree),
+                "{0:12.3f}".format(100 * sn / pp.sol[1])]
+        # Append results to outfile
+        with open(output, "a") as f:
+            f.write("".join(line) + "\n")
 
 class pPXF():
     """ Class to read pPXF pkl files """
@@ -208,9 +223,8 @@ class pPXF():
         self.lam = self.header['CRVAL1'] + np.array([0.,
                               self.header['CDELT1']*(self.header['NAXIS1']-1)])
         ######################################################################
-        # Read templates
-        self.templates, self.logLam2, self.delta = stellar_templates(velscale,
-                                                                  norm=False)
+        # # Read templates
+        star_templates, self.logLam2, self.delta, miles= stellar_templates(velscale)
         ######################################################################
         # Convolve our spectra to match MILES resolution
         FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_spec**2)
@@ -289,15 +303,17 @@ if __name__ == '__main__':
     wdir = home + "/single2"
     os.chdir(wdir)
     spectra = speclist()
+    spectra = ["fin1_n3311inn2_s29.fits"]
     ##########################################################################
     # Go to the main routine of fitting
     # velscale is defined in the setup.py file, it is used to rebin data
     # specs = [x for x in spectra if x.startswith("s")]
-    run_ppxf(spectra, velscale)
+    run_ppxf(spectra, velscale, ncomp=1)
     ##########################################################################
     # Make_table produces a table with summary of results and errors
     #spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
-    make_table(spectra, "ppxf_results.dat")
+    # spectra = speclist()
+    # make_table(spectra, "ppxf_results.dat")
     ##########################################################################
     # Observe the results for the emission lines
     # em_analysis(spectra)
