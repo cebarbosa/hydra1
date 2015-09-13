@@ -11,6 +11,7 @@ Created on 12/09/15
 home = "/home/kadu/Dropbox/hydra1"
 template_dir = home + "/templates"
 data_dir = home + "/single1"
+tables_dir = home + "/tables"
 
 # Set some global constants
 re = 8.4 # Effective radius in kpc, value from Arnaboldi
