@@ -573,7 +573,7 @@ class ppxf(object):
             self.component = np.zeros(s1[1]) # all templates have the same LOSVD
         else:
             self.component = component
-                        
+
         if len(s1) > 1:
             if self.component.size != s1[1]:
                 raise ValueError('There must be one kinematic COMPONENT per template')
