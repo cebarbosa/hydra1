@@ -17,7 +17,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from scipy.interpolate import interp1d
 
 from config import *
-from run_ppxf import pPXF
+from run_ppxf import pPXF, speclist
 import ppxf_util as util
 
 def get_ranges(spec):
@@ -60,8 +60,10 @@ if __name__ == "__main__":
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
-    outfile = PdfPages("ppxf_results.pdf")
-    specs= np.loadtxt("ppxf_results.dat", dtype=str, usecols=(0,)).tolist()
+    save = False
+    block = True
+    specs= speclist()
+    specs = "fin1_n3311out1_s35.fits"
     # Workaround to deal with cases where you have only one object in the file
     if isinstance(specs, str):
         specs = [specs]
@@ -75,6 +77,8 @@ if __name__ == "__main__":
              r'Mg$_2', r'Mg $b$', r'Fe5270', r'Fe5335', r'Fe5406', r'Fe5709',
              r'Fe5782', r'Na_D', r'TiO_1', r'TiO_2']
     textsize = 16
+    if save:
+        outfile = PdfPages("ppxf_results.pdf")
     for i, spec in enumerate(specs):
         print spec,
         name = spec.replace(".fits", '').replace("n3311", "").split("_")
@@ -92,19 +96,21 @@ if __name__ == "__main__":
             sol = pp.sol
             error = pp.error
         # Emission line
-        em_weights = pp.weights[-3:]
-        em_matrix = pp.matrix[:,-3:]
-        em = em_matrix.dot(em_weights)
-        f = interp1d(pp.w_log, em, kind="linear", bounds_error=False,
-                     fill_value=0. )
-        em_lin = f(pp.w)
+        if pp.has_emission:
+            em_weights = pp.weights[-3:]
+            em_matrix = pp.matrix[:,-3:]
+            em = em_matrix.dot(em_weights)
+            f = interp1d(pp.w_log, em, kind="linear", bounds_error=False,
+                         fill_value=0. )
+            em_lin = f(pp.w)
         ######################################################################
         plt.plot(pp.w_log[pp.goodpixels], pp.galaxy[pp.goodpixels], "-k")
         plt.plot(pp.w_log[pp.goodpixels], pp.bestfit[pp.goodpixels], "-r",
                  lw=1.5)
-        plt.plot(pp.w_log[pp.goodpixels],
-                 pp.bestfit[pp.goodpixels] - em[pp.goodpixels], "--y")
-        plt.plot(pp.w_log[pp.goodpixels], em[pp.goodpixels], "-b", lw=1.5)
+        if pp.has_emission:
+            plt.plot(pp.w_log[pp.goodpixels],
+                     pp.bestfit[pp.goodpixels] - em[pp.goodpixels], "--y")
+            plt.plot(pp.w_log[pp.goodpixels], em[pp.goodpixels], "-b", lw=1.5)
         diff = pp.galaxy[pp.goodpixels] - pp.bestfit[pp.goodpixels]
         plt.plot(pp.w_log[pp.goodpixels], diff, ".g", ms=0.5)
         badpixels = np.setdiff1d(np.arange(len((pp.w_log))), pp.goodpixels)
@@ -162,7 +168,9 @@ if __name__ == "__main__":
             plt.fill_between([lamb1, lamb2], [y0, y0], [y1, y1], color="0.9")
         plt.savefig("logs/ppxf_{0}.png".format(name), dpi=100)
         plt.pause(0.001)
-        # raw_input()
-        outfile.savefig()
+        plt.show(block=block)
+        if save:
+            outfile.savefig()
         plt.clf()
-    outfile.close()
+    if save:
+        outfile.close()

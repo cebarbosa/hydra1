@@ -655,7 +655,7 @@ class ppxf(object):
 
         if self.ncomp == 1:
             start = [start]
-        
+
         if len(start) != self.ncomp:
             raise ValueError('START must have one element per kinematic component')
             

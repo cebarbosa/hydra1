@@ -21,26 +21,31 @@ from config import *
 from load_templates import stellar_templates, emission_templates, \
                             wavelength_array
  
-def run_ppxf(spectra, velscale, ncomp=2):
+def run_ppxf(spectra, velscale, ncomp=2, has_emission=True):
     """ Run pPXF in a list of spectra"""
     ##########################################################################
     # Load templates for both stars and gas
     star_templates, logLam2, delta, miles= stellar_templates(velscale)
     gas_templates,logLam_gas, delta_gas, gas_files=emission_templates(velscale)
     ##########################################################################
-    # Join templates and set components for fit
-    templates = np.column_stack((star_templates, gas_templates))
+    # Join templates in case emission lines are used.
+    if has_emission:
+        templates = np.column_stack((star_templates, gas_templates))
+    else:
+        templates = star_templates
+    ##########################################################################
     if ncomp == 1:
         components = 0
         moments = [4]
+        templates_names = miles
     elif ncomp == 2:
         components = np.hstack((np.zeros(len(star_templates[0])),
                                 np.ones(len(gas_templates[0]))))
         moments = [4,2]
+        templates_names = np.hstack((miles, gas_files))
 
     else:
         raise Exception("ncomp has to be 1 or 2.")
-    templates_names = np.hstack((miles, gas_files))
     for i, spec in enumerate(spectra):
         print "pPXF run of spectrum {0} ({1} of {2})".format(spec, i+1,
               len(spectra))
@@ -86,9 +91,9 @@ def run_ppxf(spectra, velscale, ncomp=2):
         # Second pPXF interaction, realistic noise estimation
         pp = ppxf(templates, galaxy, noise0, velscale, start,
                   goodpixels=goodPixels, plot=False, moments=moments,
-                  degree=12, mdegree=-1, vsyst=dv, component=components)
+                  degree=20, mdegree=-1, vsyst=dv, component=components)
         pp.template_files = templates_names
-        pp.star = 0
+        pp.has_emission = has_emission
         ######################################################################
         # Save to output file to keep session
         with open(spec.replace(".fits", ".pkl"), "w") as f:
@@ -302,13 +307,13 @@ if __name__ == '__main__':
     # Change to data directory according to setup.py program
     wdir = home + "/single2"
     os.chdir(wdir)
-    spectra = speclist()
-    spectra = ["fin1_n3311inn2_s29.fits"]
+    # spectra = speclist()
+    spectra = ["fin1_n3311out1_s35.fits"]
     ##########################################################################
     # Go to the main routine of fitting
     # velscale is defined in the setup.py file, it is used to rebin data
     # specs = [x for x in spectra if x.startswith("s")]
-    run_ppxf(spectra, velscale, ncomp=1)
+    run_ppxf(spectra, velscale, ncomp=2, has_emission=1)
     ##########################################################################
     # Make_table produces a table with summary of results and errors
     #spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
