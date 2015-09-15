@@ -197,7 +197,7 @@ if __name__ == "__main__":
     # First figure, simple indices
     app = "_pa" if restrict_pa else ""
     mkfig1 = True
-    gray = "0.6"
+    gray = "0.6 "
     if mkfig1:
         plt.figure(1, figsize = (6, 12))
         gs = gridspec.GridSpec(7,1)

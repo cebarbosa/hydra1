@@ -41,7 +41,7 @@ class Dist():
         self.median = np.median(self.data)
         self.lims = lims
         self.x = np.linspace(lims[0], lims[1]+1, 1000)
-        self.MAPP = self.x[np.argmax(self.pdf(self.x))] 
+        self.MAPP = self.x[np.argmax(self.pdf(self.x))]
         return
         
 def get_model_range(table):
