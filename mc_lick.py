@@ -30,16 +30,23 @@ def run_mc(spec, i):
     #####################################################################
     # Extracting emission line spectra and subtracting from data
     #####################################################################
-    em_weights = pp.weights[-3:]
-    em_matrix = pp.matrix[:,-3:]
-    em = em_matrix.dot(em_weights)
-    f = interp1d(pp.w_log, em, kind="linear", bounds_error=False,
-                 fill_value=0. )
-    em_lin = f(pp.w)
+    if pp.has_emission:
+        em_weights = pp.weights[-3:]
+        em_matrix = pp.matrix[:,-3:]
+        em = em_matrix.dot(em_weights)
+    else:
+        em = np.zeros_like(pp.bestfit)
     ######################################################################
+    # Handle cases where more than one component is used
+    if pp.ncomp > 1:
+        sol = pp.sol[0]
+        error = pp.error[0]
+    else:
+        sol = pp.sol
+        error = pp.error
     lick_sim = np.zeros((Nsim, 25))
-    vpert = np.random.normal(pp.sol[0], pp.error[0], Nsim)
-    sigpert = np.random.normal(pp.sol[1], pp.error[1], Nsim)
+    vpert = np.random.normal(sol[0], error[0], Nsim)
+    sigpert = np.random.normal(sol[1], error[1], Nsim)
     # try:
     for j in np.arange(Nsim):
         noise_sim = np.random.normal(0, pp.noise, len(pp.bestfit))
@@ -82,6 +89,7 @@ if __name__ == "__main__":
         if spec in specs_done:
             continue
         pool.apply_async(run_mc, args=(spec, i))
+        # print spec
         # run_mc(spec, i)
     pool.close()
     pool.join()

@@ -60,10 +60,10 @@ if __name__ == "__main__":
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
-    save = True
-    block = False
+    save = False
+    block = True
     specs= speclist()
-    # specs = "fin1_n3311cen2_s31.fits"
+    specs = "fin1_n3311cen1_s24.fits"
     # Workaround to deal with cases where you have only one object in the file
     if isinstance(specs, str):
         specs = [specs]
@@ -87,6 +87,7 @@ if __name__ == "__main__":
         plt.minorticks_on()
         pp = pPXF(spec, velscale, pklfile=spec.replace(".fits", ".pkl"))
         pp.calc_sn()
+        pp.calc_arrays_emission()
         if pp.ncomp > 1:
             sol = pp.sol[0]
             error = pp.error[0]
@@ -95,22 +96,14 @@ if __name__ == "__main__":
         else:
             sol = pp.sol
             error = pp.error
-        # Emission line
-        if pp.has_emission:
-            em_weights = pp.weights[-3:]
-            em_matrix = pp.matrix[:,-3:]
-            em = em_matrix.dot(em_weights)
-            f = interp1d(pp.w_log, em, kind="linear", bounds_error=False,
-                         fill_value=0. )
-            em_lin = f(pp.w)
-        ######################################################################
-        plt.plot(pp.w_log[pp.goodpixels], pp.galaxy[pp.goodpixels], "-k")
+        plt.plot(pp.w, pp.flux, "-k")
         plt.plot(pp.w_log[pp.goodpixels], pp.bestfit[pp.goodpixels], "-r",
                  lw=1.5)
         if pp.has_emission:
-            plt.plot(pp.w_log[pp.goodpixels],
-                     pp.bestfit[pp.goodpixels] - em[pp.goodpixels], "--y")
-            plt.plot(pp.w_log[pp.goodpixels], em[pp.goodpixels], "-b", lw=1.5)
+            # plt.plot(pp.w_log[pp.goodpixels],
+                     # pp.bestfit[pp.goodpixels] - pp.em[pp.goodpixels], "--y")
+            plt.plot(pp.w_log[pp.goodpixels], pp.em[pp.goodpixels], "-b", lw=1.5)
+            plt.plot(pp.w, pp.flux - pp.em_linear, "--y")
         diff = pp.galaxy[pp.goodpixels] - pp.bestfit[pp.goodpixels]
         plt.plot(pp.w_log[pp.goodpixels], diff, ".g", ms=0.5)
         badpixels = np.setdiff1d(np.arange(len((pp.w_log))), pp.goodpixels)

@@ -13,7 +13,7 @@ import numpy as np
 import pyfits as pf
 from scipy import ndimage
 from scipy.signal import medfilt
-import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -281,6 +281,21 @@ class pPXF():
         # and the values given by pPXF.
         self.error = np.maximum(error, self.error)
         return
+
+    def calc_arrays_emission(self):
+        """ Calculate arrays correcting for emission lines. """
+        if self.has_emission:
+            em_weights = self.weights[-3:]
+            em_matrix = self.matrix[:,-3:]
+            self.em = em_matrix.dot(em_weights)
+            f = interp1d(self.w_log, self.em, kind="linear", bounds_error=False,
+                         fill_value=0. )
+            self.em_linear = f(self.w)
+        else:
+            self.em_linear = np.zeros_like(self.flux)
+            self.em = np.zeros_like(self.bestfit)
+        return
+
 
 def speclist():
     """ Defines a sorted list of all spectra in FORS2 dataset.

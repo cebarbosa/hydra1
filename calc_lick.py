@@ -198,32 +198,19 @@ if __name__ == "__main__":
                                                2.54, vel=v)
         noise = pp.flux / pp.noise[0]
         #####################################################################
-        # Extracting emission line spectra and subtracting from data
-        #####################################################################
-        if pp.has_emission:
-            em_weights = pp.weights[-3:]
-            em_matrix = pp.matrix[:,-3:]
-            em = em_matrix.dot(em_weights)
-            f = interp1d(pp.w_log, em, kind="linear", bounds_error=False,
-                         fill_value=0.)
-            em_lin = f(pp.w)
-        else:
-            em_lin = np.zeros_like(pp.flux)
-            em = np.zeros_like(pp.bestfit)
-        #####################################################################
         # Make Lick indices measurements
         #####################################################################
-        lick, lickerrs = lector.lector(pp.w, pp.flux-em_lin, noise, bands,
+        lick, lickerrs = lector.lector(pp.w, pp.flux-pp.em_linear, noise, bands,
                          vel = v, cols=(0,8,2,3,4,5,6,7),
                          keeplog=0, output="logs/lick_{0}".format(
                          spec.replace(".fits", ".pdf")), title=spec)
         # Measuring Lick indices in the templates
         noise2 = pp.bestfit / pp.noise[0]
-        lick_bf, tmp = lector.lector(pp.w_log, pp.bestfit - em, noise2, bands,
+        lick_bf, tmp = lector.lector(pp.w_log, pp.bestfit - pp.em, noise2, bands,
                          vel = v, cols=(0,8,2,3,4,5,6,7),
                          keeplog=0, output="a1.pdf", title=spec)
         noise3 = pp.bestfit_unbroad / pp.noise[0]
-        lick_bf_unb, tmp = lector.lector(pp.w_log, pp.bestfit_unbroad - em,
+        lick_bf_unb, tmp = lector.lector(pp.w_log, pp.bestfit_unbroad - pp.em,
                                          noise3,
                                         bands, vel = v, cols=(0,8,2,3,4,5,6,7),
                                         keeplog=0, title=spec)
