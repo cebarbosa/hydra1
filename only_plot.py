@@ -60,10 +60,10 @@ if __name__ == "__main__":
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
-    save = False
-    block = True
+    save = True
+    block = False
     specs= speclist()
-    specs = "fin1_n3311out1_s35.fits"
+    # specs = "fin1_n3311cen2_s31.fits"
     # Workaround to deal with cases where you have only one object in the file
     if isinstance(specs, str):
         specs = [specs]

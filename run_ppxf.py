@@ -21,7 +21,8 @@ from config import *
 from load_templates import stellar_templates, emission_templates, \
                             wavelength_array
  
-def run_ppxf(spectra, velscale, ncomp=2, has_emission=True):
+def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
+             degree=20):
     """ Run pPXF in a list of spectra"""
     ##########################################################################
     # Load templates for both stars and gas
@@ -91,7 +92,8 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True):
         # Second pPXF interaction, realistic noise estimation
         pp = ppxf(templates, galaxy, noise0, velscale, start,
                   goodpixels=goodPixels, plot=False, moments=moments,
-                  degree=20, mdegree=-1, vsyst=dv, component=components)
+                  degree=degree, mdegree=mdegree, vsyst=dv,
+                  component=components)
         pp.template_files = templates_names
         pp.has_emission = has_emission
         ######################################################################
@@ -104,7 +106,7 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True):
 def read_setup_file(gal, logw, mask_emline=True):
     """ Read setup file to set first guess and regions to be avoided. """
     w = np.exp(logw)
-    filename = os.path.join(data_dir, gal + ".setup")
+    filename = os.path.join(home, "single1", gal + ".setup")
     with open(filename) as f:
         f.readline()
         start = f.readline().split()
@@ -300,26 +302,26 @@ def speclist():
         spectra.extend(spectra2)
     return spectra
 
-
-
 if __name__ == '__main__':
     ##########################################################################
     # Change to data directory according to setup.py program
     wdir = home + "/single2"
     os.chdir(wdir)
-    # spectra = speclist()
-    spectra = ["fin1_n3311out1_s35.fits"]
+    spectra = speclist()
+    # spectra = ["fin1_n3311cen2_s31.fits"]
     ##########################################################################
     # Go to the main routine of fitting
     # velscale is defined in the setup.py file, it is used to rebin data
     # specs = [x for x in spectra if x.startswith("s")]
-    run_ppxf(spectra, velscale, ncomp=2, has_emission=1)
+    # for i, spec in enumerate(spectra):
+    #     pp = pPXF(spec, velscale)
+    #     run_ppxf([spec], velscale, ncomp=pp.ncomp,
+    #              has_emission=pp.has_emission, mdegree=pp.mdegree,
+    #              degree=pp.degree)
     ##########################################################################
     # Make_table produces a table with summary of results and errors
     #spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
     # spectra = speclist()
-    # make_table(spectra, "ppxf_results.dat")
-    ##########################################################################
-    # Observe the results for the emission lines
-    # em_analysis(spectra)
+    # make_table(spectra, "ppxf_results_mc200.dat", mc=True, nsim=200)
+    make_table(spectra, "ppxf_results.dat", mc=False)
     ##########################################################################
