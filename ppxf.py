@@ -650,7 +650,7 @@ class ppxf(object):
             self.bias = 0.7*np.sqrt(500./np.size(self.goodpixels)) # pPXF paper pg.144 left
             
         for j in range(self.ncomp):
-            if self.moments[j] not in [0,2,4,6]:
+            if self.moments[j] not in [-1,0,2,4,6]:
                 raise ValueError('MOMENTS should be 0, 2, 4 or 6')            
 
         if self.ncomp == 1:
@@ -695,7 +695,7 @@ class ppxf(object):
             if s1[0] <= 2*(abs(self.vsyst) + abs(start1[0]) + 5.*start1[1]):
                 raise ValueError('Velocity shift too big: Adjust wavelength ranges of spectrum and templates')                    
             if moments[j] < 0: # negative moments --> keep LOSVD fixed
-                for k in range(self.moments[j]):
+                for k in range(int(self.moments[j])):
                     parinfo[k+p]['fixed'] = 1
                     if k > 1:
                         parinfo[k+p]['value'] = start[j][k]
@@ -820,6 +820,7 @@ class ppxf(object):
         n = 2*dx*self.factor + 1
         x = np.linspace(-dx,dx,n)   # Evaluate the Gaussian using steps of 1/factor pixel
         losvd = np.empty((n,self.ncomp,nspec))
+        losvd2 = losvd.copy()
         p = 0
         for j in range(self.ncomp): # loop over kinematic components
             for k in range(nspec):    # nspec=2 for two-sided fitting, otherwise nspec=1
@@ -829,9 +830,11 @@ class ppxf(object):
                     s = -1
                 vel = self.vsyst + s*pars[0+p]
                 w = (x - vel)/pars[1+p]
+                w_un = (x - vel)/1.
                 w2 = w**2
+                w2_un = w_un**2
                 losvd[:,j,k] = np.exp(-0.5*w2)/(np.sqrt(2.*np.pi)*pars[1+p]) # Normalized total(Gaussian)=1
-            
+                losvd2[:,j,k] = np.exp(-0.5*w2_un)/(np.sqrt(2.*np.pi)) # Normalized total(Gaussian)=1
                 # Hermite polynomials normalized as in Appendix A of van der Marel & Franx (1993).
                 # Coefficients for h5, h6 are given e.g. in Appendix C of Cappellari et al. (2002)
                 #
@@ -893,6 +896,10 @@ class ppxf(object):
                 + 4*( np.prod(reg2[[0,1]]) + np.prod(reg2[[0,2]]) + np.prod(reg2[[1,2]]) )
             ncols = ncols + nreg
         c = np.zeros((ncols,nrows))  # This array is used for estimating predictions
+        ######################################################################
+        # Make copy of c for unconvolved template
+        d = c.copy()
+        ######################################################################
         
         for j in range(self.degree+1): # Fill first columns of the Design Matrix
             coeff = np.zeros(j+1)
@@ -904,19 +911,24 @@ class ppxf(object):
             else: 
                 c[:npix,j] = leg
 
+
         # Accounts for difference between IDL's CONVOL and signal.fftconvolve
         # CONVOLVE(a,b,/EDGE_ZERO) = signal.fftconvolve(a,b[::-1],'same')
         
         tmp = np.empty((self.star.shape[0],nspec))
+        tmp2 = tmp.copy()
         for j in range(ntemp):
             if self.factor == 1: # No oversampling of the template spectrum
                 for k in range(nspec):
                     tmp[:,k] = signal.fftconvolve(self.star[:,j],losvd[:,self.component[j],k],mode='same')
+                    tmp2[:,k] = signal.fftconvolve(self.star[:,j],losvd2[:,self.component[j],k],mode='same')
             else:             # Oversample the template spectrum before convolution
                 st = ndimage.interpolation.zoom(self.star[:,j],self.factor,order=1)
                 for k in range(nspec):
                     tmp[:,k] = rebin(signal.fftconvolve(st,losvd[:,self.component[j],k],mode='same'),self.factor)
+                    tmp2[:,k] = rebin(signal.fftconvolve(st,losvd2[:,self.component[j],k],mode='same'),self.factor)
             c[:npix*nspec,(self.degree+1)*nspec+j] = mpoly*tmp[:npix,:].ravel() # reform into a vector
+            d[:npix*nspec,(self.degree+1)*nspec+j] = mpoly*tmp2[:npix,:].ravel() # reform into a vector
         
         # Add second-degree 1D, 2D or 3D linear regularization
         # Press W.H., et al., 1992, Numerical Recipes, 2nd ed. equation (18.5.10)
@@ -963,8 +975,11 @@ class ppxf(object):
             if nspec == 2:
                 c[:npix*nspec,k+2*j] = [skyj,skyj*0]   # Sky for left spectrum
                 c[:npix*nspec,k+2*j+1] = [skyj*0,skyj] # Sky for right spectrum
+                d[:npix*nspec,k+2*j] = [skyj,skyj*0]   # Sky for left spectrum
+                d[:npix*nspec,k+2*j+1] = [skyj*0,skyj] # Sky for right spectrum
             else: 
                 c[:npix,k+j] = skyj
+                d[:npix,k+j] = skyj
 
         npoly = (self.degree+1)*nspec # Number of additive polynomials in the fit
         
@@ -986,7 +1001,9 @@ class ppxf(object):
                 bb = b[self.goodpixels]
             self.weights = _bvls_solve(aa,bb,npoly)
             self.matrix = c[:npix*nspec,:]
+            self.matrix_unbroad = d[:npix*nspec,:]
             self.bestfit = c[:npix*nspec,:].dot(self.weights)
+            self.bestfit_unbroad = d[:npix*nspec,:].dot(self.weights)
             err = (self.galaxy[self.goodpixels] - self.bestfit[self.goodpixels]) \
                 /  self.noise[self.goodpixels]
             if self.clean is True:
