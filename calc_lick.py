@@ -71,6 +71,7 @@ def check_intervals(setupfile, bands, vel):
     c = 299792.458 # speed of light in km/s
     with open(setupfile) as f:
         lines = [x for x in f.readlines()]
+    lines = [x for x in lines if x.strip()]
     intervals = np.array(lines[5:]).astype(float)
     intervals = intervals.reshape((len(intervals)/2, 2))
     bands = np.loadtxt(bands, usecols=(2,7))
@@ -82,8 +83,9 @@ def check_intervals(setupfile, bands, vel):
                 goodbands[i] = 1
     return np.where(goodbands == 1, 1, np.nan)
 
-def get_model_range(modeldata):
+def get_model_range():
     """ Get the range for the indices according to models. """
+    modeldata = np.loadtxt(os.path.join(tables_dir, "models_thomas_2010.dat"))
     indices = modeldata[:,3:].T
     ranges = np.zeros((len(indices), 2))
     for i, index in enumerate(indices):
@@ -158,10 +160,13 @@ if __name__ == "__main__":
     os.chdir(workdir)
     if not os.path.exists(os.path.join(workdir, "logs")):
         os.mkdir(os.path.join(workdir, "logs"))
+    lims = get_model_range()
+    lim_excess =  0.5 * np.abs(np.diff(lims)).T[0]
+    lims[:,0] -= lim_excess
+    lims[:,1] += lim_excess
     kinfile = "ppxf_results.dat"
     specs = np.genfromtxt(kinfile, usecols = (0,), dtype=None).tolist()
-    vel, velerr, sigma, sigmaerr, h3s, h4s = np.loadtxt(kinfile,
-                                                      usecols=(1,2,3,4,5,7)).T
+    # specs = ["fin1_n3311inn1_s31.fits"]
     K04 = Vdisp_corr_k04()
     bands = os.path.join(tables_dir, "BANDS")
     lick_types = np.loadtxt(bands, usecols=(8,))
@@ -170,28 +175,23 @@ if __name__ == "__main__":
     # Initiating outputss
     results, results_err = [header], [header]
     results3, results3_err = [header], [header]
-    results_nocorr = [header]
-    results_nocorr, results_nocorr_err = [header], [header]
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
     offset = np.loadtxt(os.path.join(tables_dir,"LICK_OFFSETS.dat"),
                         usecols=(1,)).T
-    for i, (spec, v, s, h3, h4 ) in enumerate(zip(specs, vel, sigma, h3s, h4s)):
+    for i, spec in enumerate(specs):
         setupfile = os.path.join(home, "single1/{0}.setup".format(spec))
         if not os.path.exists(setupfile):
-            setupfile = os.path.join(data_dir, "{0}.setup".format(spec))
-        print spec, v, s, h3, h4
-        try:
-            goodindices = check_intervals(setupfile, bands, v)
-        except:        
-            err = ["#" + spec] + 25 * ["nan"]
-            results.append("\t".join(err))
-            results_err.append("\t".join(err))
-            results3.append("\t".join(err))
-            results3_err.append("\t".join(err))
+            print "Setup file not found: ", setupfile
             continue
         # Read the spectrum file and pPXF results
         pp = pPXF(spec, velscale)
         pp.calc_arrays_emission()
+        if pp.ncomp > 1:
+            v, s, h3, h4 = pp.sol[0]
+        else:
+            v, s, h3, h4 = pp.sol
+        print spec, v, s
+        goodindices = check_intervals(setupfile, bands, v)
         # Broadening of the spectra to the Lick resolution
         pp.flux = lector.broad2lick(pp.w, pp.flux, 2.1, vel=v)
         pp.bestfit = lector.broad2lick(pp.w_log, pp.bestfit, 2.54, vel=v)
@@ -241,20 +241,19 @@ if __name__ == "__main__":
         lick3 += offset
         lick4 += offset
         ######################################################################
+        # Clip arrays to remove unreasonable results
+        a = np.argwhere(~np.isnan(lick3)).T[0]
+        for idx in a:
+            if lick3[idx] <= lims[idx,0] or  lick3[idx] > lims[idx,1]:
+                lick3[idx] = np.nan
+        clipped_lick = np.clip(lick, lims[:,0], lims[:,1])
         # Convert to string
         ######################################################################
-        lick = [str(x) for x in np.around(lick, 5)]
-        lickerrs = [str(x) for x in np.around(lickerrs, 5)]
-        lick2 = [str(x) for x in np.around(lick2, 5)]
-        lickerrs2 = [str(x) for x in np.around(lickerrs2, 5)]
-        lick3 = [str(x) for x in np.around(lick3, 5)]
-        lickerrs3 = [str(x) for x in np.around(lickerrs3, 5)]
+        lick = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick])
+        lick2 = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick2])
+        lick3 = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick3])
         # Append to output
-        results.append(spec + "\t" + "\t".join(lick))
-        results_err.append(spec + "\t" + "\t".join(lickerrs))
-        results3.append(spec + "\t" + "\t".join(lick3))
-        results3_err.append(spec + "\t" + "\t".join(lickerrs3))
+        results.append("{0:28s}".format(spec) + lick)
+        results3.append("{0:28s}".format(spec) + lick3)
     save(results, "lick_nocorr.tsv")
-    save(results_err, "lick_nocorr_errs.tsv")
-    save(results3, "lick_vcorr_ppxf.tsv")
-    save(results3_err, "lick_vcorr_ppxf_errs.tsv")
+    save(results3, "lick_corr.tsv")
