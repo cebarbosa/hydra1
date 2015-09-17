@@ -123,7 +123,7 @@ def merge_polys():
     return np.array(newpolys)
         
 def merge_tables():
-    files = ["ppxf_results.dat", "lick_vcorr_ppxf.tsv", "ages_Z_alpha.tsv",
+    files = ["ppxf_results.dat", "lick_vcorr_ppxf.tsv", "populations.txt",
              "lick_mc_errs_400.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
@@ -378,7 +378,7 @@ def make_sn():
     sn = sn[good]
     ###############################################
     # Colorbar limits
-    vmin, vmax = 5, 35
+    vmin, vmax = 10, 35
     # Set limits for the plot
     norm = Normalize(vmin, vmax)
     ###############################################
@@ -1460,7 +1460,7 @@ if __name__ == "__main__":
     # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
-    # make_sn()
+    make_sn()
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
@@ -1472,7 +1472,7 @@ if __name__ == "__main__":
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    make_ssp()
+    # make_ssp()
     #####################################################
     # make_other()
     # make_sb(im="residual")

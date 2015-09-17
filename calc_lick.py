@@ -191,6 +191,7 @@ if __name__ == "__main__":
             continue
         # Read the spectrum file and pPXF results
         pp = pPXF(spec, velscale)
+        pp.calc_arrays_emission()
         # Broadening of the spectra to the Lick resolution
         pp.flux = lector.broad2lick(pp.w, pp.flux, 2.1, vel=v)
         pp.bestfit = lector.broad2lick(pp.w_log, pp.bestfit, 2.54, vel=v)

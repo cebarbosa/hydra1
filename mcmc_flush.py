@@ -9,10 +9,10 @@ Delete models of MCMC
 import os
 import shutil
 
-from setup_n3311 import *
+from config import *
 
 if __name__ == "__main__":
-    os.chdir(rerun_dir)
+    os.chdir(os.path.join(home, "single2"))
     folders = [x for x in os.listdir(".") if os.path.isdir(x)]
     for folder in folders:
         if folder in ["figs", "logs"]:

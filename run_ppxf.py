@@ -14,6 +14,7 @@ import pyfits as pf
 from scipy import ndimage
 from scipy.signal import medfilt
 from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -22,8 +23,12 @@ from load_templates import stellar_templates, emission_templates, \
                             wavelength_array
  
 def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
-             degree=20):
+             degree=20, pkls=None, plot=False):
     """ Run pPXF in a list of spectra"""
+    if pkls == None:
+        pkls = [x.replace(".fits", ".pkl") for x in spectra]
+    if isinstance(spectra, str):
+        spectra = [spectra]
     ##########################################################################
     # Load templates for both stars and gas
     star_templates, logLam2, delta, miles= stellar_templates(velscale)
@@ -50,7 +55,7 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
     for i, spec in enumerate(spectra):
         print "pPXF run of spectrum {0} ({1} of {2})".format(spec, i+1,
               len(spectra))
-        outfile = spec.replace(".fits", ".pkl")
+        pkl = pkls[i]
         ######################################################################
         # Read one galaxy spectrum and define the wavelength range
         specfile = os.path.join(data_dir, spec)
@@ -83,22 +88,26 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
             start = [start, [start[0], 30]]
         ######################################################################
         # First pPXF interaction
-        pp0 = ppxf(templates, galaxy, noise, velscale, start,
-                   goodpixels=goodPixels, plot=False, moments=moments,
-                   degree=12, mdegree=-1, vsyst=dv, component=components)
-        rms0 = galaxy[goodPixels] - pp0.bestfit[goodPixels]
-        noise0 = 1.4826 * np.median(np.abs(rms0 - np.median(rms0)))
-        noise0 = np.zeros_like(galaxy) + noise0
+        if os.path.exists(spec.replace(".fits", ".pkl")):
+            pp0 = pPXF(spec, velscale, pklfile=spec.replace(".fits", ".pkl"))
+            noise0 = pp0.noise
+        else:
+            pp0 = ppxf(templates, galaxy, noise, velscale, start,
+                       goodpixels=goodPixels, plot=False, moments=moments,
+                       degree=12, mdegree=-1, vsyst=dv, component=components)
+            rms0 = galaxy[goodPixels] - pp0.bestfit[goodPixels]
+            noise0 = 1.4826 * np.median(np.abs(rms0 - np.median(rms0)))
+            noise0 = np.zeros_like(galaxy) + noise0
         # Second pPXF interaction, realistic noise estimation
         pp = ppxf(templates, galaxy, noise0, velscale, start,
-                  goodpixels=goodPixels, plot=False, moments=moments,
+                  goodpixels=goodPixels, plot=plot, moments=moments,
                   degree=degree, mdegree=mdegree, vsyst=dv,
                   component=components)
         pp.template_files = templates_names
         pp.has_emission = has_emission
         ######################################################################
         # Save to output file to keep session
-        with open(spec.replace(".fits", ".pkl"), "w") as f:
+        with open(pkl, "w") as f:
             pickle.dump(pp, f)
         ######################################################################
     return
@@ -323,20 +332,19 @@ if __name__ == '__main__':
     wdir = home + "/single2"
     os.chdir(wdir)
     spectra = speclist()
-    # spectra = ["fin1_n3311cen2_s31.fits"]
     ##########################################################################
     # Go to the main routine of fitting
-    # velscale is defined in the setup.py file, it is used to rebin data
-    # specs = [x for x in spectra if x.startswith("s")]
-    # for i, spec in enumerate(spectra):
-    #     pp = pPXF(spec, velscale)
-    #     run_ppxf([spec], velscale, ncomp=pp.ncomp,
-    #              has_emission=pp.has_emission, mdegree=pp.mdegree,
-    #              degree=pp.degree)
+    for spec in spectra:
+        pp = pPXF(spec, velscale)
+        if pp.ncomp == 1:
+            continue
+        if pp.sol[0][1] < pp.sol[1][1]:
+            run_ppxf(spec, velscale, ncomp=1,has_emission=0, mdegree=-1,
+                     degree=12, plot=False)
     ##########################################################################
     # Make_table produces a table with summary of results and errors
     #spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
     # spectra = speclist()
     # make_table(spectra, "ppxf_results_mc200.dat", mc=True, nsim=200)
-    make_table(spectra, "ppxf_results.dat", mc=False)
+    # make_table(spectra, "ppxf_results.dat", mc=False)
     ##########################################################################

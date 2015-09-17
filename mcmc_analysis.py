@@ -13,24 +13,29 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+from scipy.optimize import fmin
 import matplotlib.cm as cm
-import matplotlib.colors as colors
 from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
 
 from config import *
+from run_ppxf import speclist
 
 class Dist():
     """ Simple class to handle the distribution data of MCMC. """
     def __init__(self, data, lims, bw=0.005):
         self.data = data
+        self.lims = lims
         self.bw = bw
         self.kernel = stats.gaussian_kde(self.data, bw_method=self.bw)
-        self.median = np.median(self.data)
-        self.lims = lims
-        self.x = np.linspace(lims[0], lims[1], 2000)
-        self.sample = self.kernel(self.x)
-        self.MAPP = self.x[np.argmax(self.sample)]
+        self.skew, self.pvalue = stats.skewtest(self.data)
+        self.param = stats.genextreme.fit(self.data)
+        self.dist = stats.genextreme
+        self.pdf = lambda x : self.dist.pdf(x,
+                            *self.param[:-2], loc=self.param[-2],
+                                    scale=self.param[-1])
+        self.MAPP = fmin(lambda x: -self.pdf(x),
+                         0.5 * (self.lims[0] + self.lims[1]), disp=0)[0]
         # Calculate percentiles
         self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
         self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
@@ -62,37 +67,11 @@ def hist2D(dist1, dist2):
     plt.minorticks_on()
     return
 
-def load_results():
-    """ Read results from the main table and return strings with values. """
-    filename = os.path.join(working_dir, "results.tab")
-    names = np.loadtxt(filename, usecols=(0,), dtype=str).tolist()
-    data = np.loadtxt(filename, usecols=(69,72,75)).T
-    errs1 = np.loadtxt(filename, usecols=(70,73,76)).T
-    errs2 = np.loadtxt(filename, usecols=(71,74,77)).T
-    for i in range(3):
-        errs1[i] = data[i] - errs1[i]
-        errs2[i] = errs2[i] - data[i]
-    errs1[0] = errs1[0] / data[0] * np.log10(np.e)
-    errs2[0] = errs2[0] / data[0] * np.log10(np.e)
-    errs1 = errs1.T
-    errs2 = errs2.T
-    data[0] = np.log10(data[0])
-    results = {}
-    for i, (a,m,al) in enumerate(data.T):
-        age = r"log Age (Gyr)= {0}$^{{+{1}}}_{{-{2}}}$ dex".format(round(a,2),
-                                    round(errs2[i,0],2), round(errs1[i,0],2))
-        metal = r"[Z/H]={0}$^{{+{1}}}_{{-{2}}}$ dex".format(round(m,2),
-                                    round(errs2[i,1],2), round(errs1[i,1],2))
-        alpha = r"[$\alpha$/Fe]={0}$^{{+{1}}}_{{-{2}}}$ dex".format(round(al,2),
-                                    round(errs2[i,2],2), round(errs1[i,2],2))
-        results[names[i]]= (age, metal, alpha)
-    return results
-              
 if __name__ == "__main__":
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
     plt.ioff()
-    specs = np.genfromtxt("results.tab", usecols=(0,), dtype=None).tolist()
+    specs = speclist()
     dirs = [x.replace(".fits", "_db") for x in specs]
     lims = [[np.log10(1.), np.log10(15.)], [-2.25, 0.67], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
@@ -106,6 +85,8 @@ if __name__ == "__main__":
     for spec in specs:
         print spec
         folder = spec.replace(".fits", "_db")
+        if not os.path.exists(os.path.join(working_dir, folder)):
+            continue
         os.chdir(os.path.join(working_dir, folder))
         name = spec.replace(".fits", '').replace("n3311", "").split("_")
         name = name[1] + name[2]
@@ -123,12 +104,17 @@ if __name__ == "__main__":
         for i, d in enumerate(dists):
             ax = plt.subplot(3,3,(4*i)+1)
             N, bins, patches = plt.hist(d.data, color="w", weights=weights,
-                                        ec="w", bins=35, range=tuple(lims[i]))
+                                        ec="w", bins=35, range=tuple(lims[i]),
+                                        normed=True)
             fracs = N.astype(float)/N.max()
             norm = Normalize(-.2* fracs.max(), 1.5 * fracs.max())
             for thisfrac, thispatch in zip(fracs, patches):
                 color = cm.gray_r(norm(thisfrac))
                 thispatch.set_facecolor(color)
+            x = np.linspace(d.data.min(), d.data.max(), 100)
+            pdf_fitted = d.dist.pdf(x, *d.param[:-2], loc=d.param[-2],
+                                    scale=d.param[-1])
+            plt.plot(x, pdf_fitted, "-r")
             plt.axvline(d.MAPP, c="r", ls="--")
             plt.tick_params(labelright=True, labelleft=False)
             plt.xlim(d.lims)

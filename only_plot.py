@@ -60,10 +60,10 @@ if __name__ == "__main__":
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
-    save = False
-    block = True
+    save = True
+    block = False
     specs= speclist()
-    specs = "fin1_n3311cen1_s24.fits"
+    # specs = "fin1_n3311out2_s36.fits"
     # Workaround to deal with cases where you have only one object in the file
     if isinstance(specs, str):
         specs = [specs]
@@ -100,22 +100,22 @@ if __name__ == "__main__":
         plt.plot(pp.w_log[pp.goodpixels], pp.bestfit[pp.goodpixels], "-r",
                  lw=1.5)
         if pp.has_emission:
-            # plt.plot(pp.w_log[pp.goodpixels],
-                     # pp.bestfit[pp.goodpixels] - pp.em[pp.goodpixels], "--y")
+            plt.plot(pp.w_log[pp.goodpixels],
+                     pp.bestfit[pp.goodpixels] - pp.em[pp.goodpixels], "--y")
             plt.plot(pp.w_log[pp.goodpixels], pp.em[pp.goodpixels], "-b", lw=1.5)
-            plt.plot(pp.w, pp.flux - pp.em_linear, "--y")
+            # plt.plot(pp.w, pp.flux - pp.em_linear, "--y")
         diff = pp.galaxy[pp.goodpixels] - pp.bestfit[pp.goodpixels]
         plt.plot(pp.w_log[pp.goodpixels], diff, ".g", ms=0.5)
         badpixels = np.setdiff1d(np.arange(len((pp.w_log))), pp.goodpixels)
-        badpixels.sort()  
+        badpixels.sort()
         ymin = np.floor(np.min(diff))
-        ymax = 1.2 * plt.ylim()[1]
+        ymax = 1.5 * np.median(pp.galaxy) + 2 * pp.noise
         plt.xlim(xlims[0], xlims[1])
         ylim = plt.ylim(ymin, ymax)
         plt.plot(pp.w_log[badpixels], 
                  pp.flux_log[badpixels] - pp.bestfit[badpixels], 
                  ".k", ms=0.5)
-        plt.ylim(ylim)         
+        plt.ylim(ylim)
         plt.axhline(y=0, ls="--", c="k")
         plt.xlabel(r"$\lambda$ ($\AA$)", size=18)
         plt.ylabel(r"Flux (Counts)", size=18)

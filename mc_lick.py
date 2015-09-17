@@ -14,7 +14,7 @@ from scipy.interpolate import interp1d
 from setup_n3311 import *
 import lector
 from lick_hydra1_vdispcorr import BroadCorr
-from run_ppxf import pPXF
+from run_ppxf import pPXF, speclist
 
 def run_mc(spec, i):
     """ Run MC routine in single spectrum. """
@@ -27,6 +27,7 @@ def run_mc(spec, i):
     #     print "Skiped MC for {0}.".format(spec)
     #     return
     pp = pPXF(spec, velscale)
+    sn = pp.calc_sn()
     #####################################################################
     # Extracting emission line spectra and subtracting from data
     #####################################################################
@@ -50,7 +51,8 @@ def run_mc(spec, i):
     # try:
     for j in np.arange(Nsim):
         noise_sim = np.random.normal(0, pp.noise, len(pp.bestfit))
-        obs_sim = lector.broad2lick(pp.w, pp.bestfit + noise_sim - em, 2.54, vel=vpert[j])
+        obs_sim = lector.broad2lick(pp.w, pp.bestfit + noise_sim - em,
+                                    2.54, vel=vpert[j])
         l, err = lector.lector(pp.w, obs_sim, noise_sim, bands, vel = vpert[j],
                                cols=(0,8,2,3,4,5,6,7), keeplog=0)
         lick_sim[j] = l * bcorr(sigpert[j], l)
@@ -66,9 +68,7 @@ def run_mc(spec, i):
 if __name__ == "__main__":
     os.chdir(os.path.join(home, "single2"))
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
-    specs = np.loadtxt("ppxf_results.dat", usecols=(0,), dtype=str).tolist()
-    vels, velerrs = np.loadtxt("ppxf_results.dat", usecols=(1,2)).T
-    sigmas, sigmaerrs = np.loadtxt("ppxf_results.dat", usecols=(3,4)).T
+    specs = speclist()
     bands = os.path.join(tables_dir, "BANDS")
     lick_types = np.loadtxt(bands, usecols=(8,))
     lick_indices = np.genfromtxt(bands, usecols=(0,), dtype=None).tolist()
@@ -84,12 +84,12 @@ if __name__ == "__main__":
                     "\tFe4383\tCa4455\tFe4531\tCe4668\tH_beta\tFe5015\tMg_1\tMg_2\t"
                     "Mg_b\tFe5270\t	Fe5335\tFe5406\tFe5709\tFe5782\tNa_D\t"
                     "TiO_1\tTiO_2\n")
+    specs = [x for x in specs if x not in specs_done]
     pool = mp.Pool()
     for i, spec in enumerate(specs):
-        if spec in specs_done:
-            continue
         pool.apply_async(run_mc, args=(spec, i))
         # print spec
         # run_mc(spec, i)
+        # break
     pool.close()
     pool.join()
