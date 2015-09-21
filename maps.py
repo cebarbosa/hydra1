@@ -842,7 +842,7 @@ def make_lick2(loess=False, rlims=40):
     yc2 = 0.104
     ycb = [yc1, yc1, yc1, yc2, yc2, yc2]
     cmap = brewer2mpl.get_map('YlOrRd', 'sequential', 3).mpl_colormap
-    # cmap = cm.get_cmap("hot")
+    # cmap = cm.get_cmap("gray_r")
     # cmap = "pink"
     # cmap = cm.get_cmap("bone_r")
     # cmap = nc.cmap_map(lambda x: x*0.54 + 0.43, cmap)
@@ -1346,7 +1346,7 @@ def make_ssp(loess=False):
     ycb = [yc1, yc1, yc2, yc2]
     fig = plt.figure(figsize=(10.5, 10))
     gs = gridspec.GridSpec(2,2)
-    gs.update(left=0.06, right=0.988, bottom=0.05, top=0.99, hspace=0.03,
+    gs.update(left=0.065, right=0.988, bottom=0.055, top=0.985, hspace=0.03,
               wspace=0.02)
     ylabels = [1,0,1,0]
     xlabels = [0,0,1,1]
@@ -1467,12 +1467,12 @@ if __name__ == "__main__":
     # make_kin_summary(loess=False)
     ####################################################
     # Produce maps for Lick indices
-    make_lick2(loess=False, rlims=40)
+    # make_lick2(loess=False, rlims=40)
     #Produce and array of maps
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    # make_ssp()
+    make_ssp()
     #####################################################
     # make_other()
     # make_sb(im="residual")

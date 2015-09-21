@@ -83,7 +83,7 @@ if __name__ == "__main__":
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
     spectra, data, errs = read_data("lick_corr.tsv",
-                                    "lick_mc_errs_10.txt")
+                                    "mc_lick_nsim400.txt")
     lims = get_model_lims()
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):

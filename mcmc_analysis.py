@@ -35,7 +35,7 @@ class Dist():
                             *self.param[:-2], loc=self.param[-2],
                                     scale=self.param[-1])
         self.MAPP = fmin(lambda x: -self.pdf(x),
-                         0.5 * (self.lims[0] + self.lims[1]), disp=0)[0]
+                         0.5 * (self.data.min() + self.data.max()), disp=0)[0]
         # Calculate percentiles
         self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
         self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
