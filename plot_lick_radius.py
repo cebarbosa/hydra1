@@ -19,6 +19,7 @@ from scipy.interpolate import interp1d
 from scipy import ndimage
 
 from config import *
+from mcmc_model import get_model_lims
 
 class Ssp:
     """ Wrapper for the interpolated model."""
@@ -218,6 +219,10 @@ if __name__ == "__main__":
     app = "_pa" if restrict_pa else ""
     mkfig1 = True
     gray = "0.8"
+    ##########################################################################
+    lims = get_model_lims()
+    idx = np.array([12,13,16,17,18,19,20])
+    lims = lims[idx]
     if mkfig1:
         plt.figure(1, figsize = (6, 13))
         gs = gridspec.GridSpec(7,1)
@@ -233,14 +238,14 @@ if __name__ == "__main__":
                 labels = [None, None, None]
             notnans = ~np.isnan(ll)
             ax = plt.subplot(gs[j])
-            ax.errorbar(loubser12[:,0], loubser12[:,j+1],
-                        yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
-                        fmt="x", mec="r", capsize=0,
-                        label= "Loubser et al. 2012", alpha=1, ms=7, mew=2.5)
             ydata = ll[notnans]
             ax.errorbar(r[notnans], ydata, yerr=lickerr[j][notnans],
                         fmt="o", color=gray, ecolor=gray, capsize=0, mec=gray,
                         label=labels[0], ms=5.5, alpha=1, markerfacecolor="none", mew=2 )
+            ax.errorbar(loubser12[:,0], loubser12[:,j+1],
+                        yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
+                        fmt="x", mec="r", capsize=0,
+                        label= "Loubser et al. 2012", alpha=1, ms=7, mew=2.5)
             # ax.errorbar(rbins, data_r[:,j], yerr = errs_r[:,j], fmt="s",
             #         color="r", ecolor="k", capsize=0, mec="k", ms=7,
             #         zorder=100, label=labels[2], markerfacecolor="none", mew=2)
@@ -260,11 +265,11 @@ if __name__ == "__main__":
             plt.ylabel(indices[j])
             ax.yaxis.set_major_locator(plt.MaxNLocator(5))
             if j == 0:
-                leg = ax.legend(prop={'size':8}, loc=2, ncol=1, fontsize=10)
+                leg = ax.legend(prop={'size':10}, loc=2, ncol=1, fontsize=14)
             add = 0 if j != 0 else 2
             sigma_mad = 1.48 * np.median(np.abs(ydata - np.median(ydata)))
-            ym = np.ceil(np.median(ydata)-5 * sigma_mad)
-            yp = np.floor(np.median(ydata)+5*sigma_mad+add)
+            ym = np.ceil(np.median(ydata)-8 * sigma_mad)
+            yp = np.floor(np.median(ydata)+8*sigma_mad+add)
             ylim = plt.ylim(ym, yp)
             ##################################################################
             # Measuring gradients
@@ -283,20 +288,20 @@ if __name__ == "__main__":
             lll.set_dashes([10, 3])
             ##################################################################
             # Halo
-            l = lickhalo[j]
-            lerr = errs_halo[j]
-            mask = np.logical_or(~np.isnan(l), ~np.isnan(lerr))
-            print lerr[mask]
-            raw_input()
-            # print l[mask].min(), l[mask].max()
-            # raw_input()
-            popth, pcovh = curve_fit(line, rhalo[mask], l[mask], sigma=lerr[mask])
+            values = lickhalo[j]
+            for k,v in enumerate(values):
+                if v <= lims[j][0] or v >= lims[j][1]:
+                    values[k] = np.nan
+            mask = ~np.isnan(values)
+            l = lickhalo[j][mask]
+            lerr = errs_halo[j][mask]
+            popth, pcovh = curve_fit(line, rhalo[mask], l, sigma=lerr)
             pcovh = np.sqrt(np.diagonal(pcovh))
             x = np.linspace(r_tran, 0.7, 100)
             if not log:
                 x = 10**x
             y = line(x, popth[0], popth[1])
-            lll, = ax.plot(x, y, "-g", lw=1.5, zorder=10000)
+            lll, = ax.plot(x, y, "-k", lw=1.5, zorder=10000)
             lll.set_dashes([10, 3])
             #################################################################
             # Ploting rms 1%
@@ -309,21 +314,21 @@ if __name__ == "__main__":
                             linewidth=0, alpha=0.5)
             ##################################################################
             # Outer halo in bins
-            popt2, pcov2 = curve_fit(line, rbins, data_r[:,j], sigma=errs_r[:,j])
-            pcov2 = np.sqrt(np.diagonal(pcov2))
-            x = np.linspace(r_tran, r.max(), 100)
-            if not log:
-                x = 10**x
-            y = line(x, popt2[0], popt2[1])
-            ax.plot(x, y, "--k", lw=2)
-            ax.axvline(x=r_tran, c="k", ls="-.")
+            # popt2, pcov2 = curve_fit(line, rbins, data_r[:,j], sigma=errs_r[:,j])
+            # pcov2 = np.sqrt(np.diagonal(pcov2))
+            # x = np.linspace(r_tran, r.max(), 100)
+            # if not log:
+            #     x = 10**x
+            # y = line(x, popt2[0], popt2[1])
+            # ax.plot(x, y, "--k", lw=2)
+            # ax.axvline(x=r_tran, c="k", ls="-.")
             ##################################################################
             # Ploting rms 1%
             rms = np.loadtxt(os.path.join(tables_dir,
                                     "rms_1pc_lick_{0}.txt".format(j)))
             xrms, yrms = rms[rms[:,0]>=r_tran].T
-            ax.fill_between(xrms, yrms + line(xrms, popt2[0], popt2[1]),
-                            line(xrms, popt2[0], popt2[1]) - yrms,
+            ax.fill_between(xrms, yrms + line(xrms, popth[0], popth[1]),
+                            line(xrms, popth[0], popth[1]) - yrms,
                             edgecolor="none", color="y",
                             linewidth=0, alpha=0.5)
             ##################################################################
@@ -337,67 +342,66 @@ if __name__ == "__main__":
             # ##################################################################
             tex.append(r"{0} & {1[0]:.1f}$\pm${2[0]:.1f} & {1[1]:.1f}$\pm${2[1]:.1f}" \
             r" & {3[0]:.1f}$\pm${4[0]:.1f} & {3[1]:.1f}$\pm${4[1]:.1f}""\\\\".format(
-                indices[j][:-7], popt, pcov, popt2, pcov2))
+                indices[j][:-7], popt, pcov, popth, pcovh))
             print indices[j][:-7],
             for m in [1,2,3]:
-                print np.abs(popt[1] - popt2[1]) < m * (pcov[1]+pcov2[1]),
+                print np.abs(popt[1] - popth[1]) < m * (pcov[1]+pcovh[1]),
             print
         print "Saving new figure..."
         plt.savefig("figs/lick_radius.png", dpi=100,
                     bbox_inches="tight", transparent=False)
         for t in tex:
             print t
-    raw_input(os.getcwd())
     # Making plots of Hbeta, Mgb, <Fe> and [MgFe]'
-    r, pa, sn = np.loadtxt(results_masked, usecols=(3,4,14)).T
-    # r /= re
-    lick = np.loadtxt(results_masked, usecols=(39, 67, 80))
-    lickerr = np.loadtxt(results_masked, usecols=(40, 68, 81))
-    if restrict_pa:
-        good_pa = np.logical_and(pa > 0, pa < 270)
-        r = r[good_pa]
-        lick = lick[good_pa]
-        lickerr = lickerr[good_pa]
-        sn = sn[good_pa]
-    r = r[sn > sn_cut]
-    lick = np.transpose(lick[sn > sn_cut])
-    lickerr = np.transpose(lickerr[sn > sn_cut])
-    gs2 = gridspec.GridSpec(len(lick),3)
-    gs2.update(left=0.15, right=0.95, bottom = 0.1, top=0.94, hspace = 0.10, 
-               wspace=0.04)
-    plt.figure(2, figsize = (6, 7))
-    indices = [r"H$\beta$ [$\AA$]", r"[MgFe]'", 
-               r"$\mbox{Mg }b/\langle\mbox{Fe}\rangle$"]
-    ylims = [[0, 3.2], [1, 5], [0, 3]]
-    for j, (ll,lerr) in enumerate(zip(lick, lickerr)):
-        ax = plt.subplot(gs2[j, 0:2], xscale="log")
-        notnans = ~np.isnan(ll)
-        ax.errorbar(r[notnans], ll[notnans], yerr=lerr[notnans], 
-                    fmt="d", color="r",
-                    ecolor=gray, capsize=0, mec="k", markerfacecolor="none")
-        # plt.errorbar(lodo2[:,0], lodo2[:,j+1],
-        #              yerr=lodo2err[:,j+1], fmt="+", c="b", capsize=0,
-        #              mec="b", ecolor="0.5", label=None, ms=10)
-        # plt.errorbar(dwarf2[0],
-        #              dwarf2[j+1], yerr=dwarf2err[j+1], fmt="o",
-        #              c="w", capsize=0, mec="b", ecolor="0.5")
-        plt.minorticks_on()
-        if j != len(lick) -1 :
-            ax.xaxis.set_ticklabels([])
-        else:
-            plt.xlabel(r"R (kpc)")
-            ax.set_xticklabels(["0.1", "1", "10"])
-        plt.ylabel(indices[j], fontsize=10)
-        ax.yaxis.set_major_locator(plt.MaxNLocator(5))
-        plt.ylim(ylims[j])  
-        # Histograms 
-        ax = plt.subplot(gs2[j, 2])
-        plt.minorticks_on()
-        ax.hist(ll[notnans], orientation="horizontal", color="r",
-                ec="k")
-        ax.yaxis.set_major_locator(plt.MaxNLocator(5))
-        ax.xaxis.set_ticklabels([])
-        ax.yaxis.set_ticklabels([])
-        plt.ylim(ylims[j])
-    plt.savefig("figs/lick_radius_combined.pdf",
-                bbox_inches="tight", transparent=False)
+    # r, pa, sn = np.loadtxt(results_masked, usecols=(3,4,14)).T
+    # # r /= re
+    # lick = np.loadtxt(results_masked, usecols=(39, 67, 80))
+    # lickerr = np.loadtxt(results_masked, usecols=(40, 68, 81))
+    # if restrict_pa:
+    #     good_pa = np.logical_and(pa > 0, pa < 270)
+    #     r = r[good_pa]
+    #     lick = lick[good_pa]
+    #     lickerr = lickerr[good_pa]
+    #     sn = sn[good_pa]
+    # r = r[sn > sn_cut]
+    # lick = np.transpose(lick[sn > sn_cut])
+    # lickerr = np.transpose(lickerr[sn > sn_cut])
+    # gs2 = gridspec.GridSpec(len(lick),3)
+    # gs2.update(left=0.15, right=0.95, bottom = 0.1, top=0.94, hspace = 0.10,
+    #            wspace=0.04)
+    # plt.figure(2, figsize = (6, 7))
+    # indices = [r"H$\beta$ [$\AA$]", r"[MgFe]'",
+    #            r"$\mbox{Mg }b/\langle\mbox{Fe}\rangle$"]
+    #
+    # for j, (ll,lerr) in enumerate(zip(lick, lickerr)):
+    #     ax = plt.subplot(gs2[j, 0:2], xscale="log")
+    #     notnans = ~np.isnan(ll)
+    #     ax.errorbar(r[notnans], ll[notnans], yerr=lerr[notnans],
+    #                 fmt="d", color="r",
+    #                 ecolor=gray, capsize=0, mec="k", markerfacecolor="none")
+    #     # plt.errorbar(lodo2[:,0], lodo2[:,j+1],
+    #     #              yerr=lodo2err[:,j+1], fmt="+", c="b", capsize=0,
+    #     #              mec="b", ecolor="0.5", label=None, ms=10)
+    #     # plt.errorbar(dwarf2[0],
+    #     #              dwarf2[j+1], yerr=dwarf2err[j+1], fmt="o",
+    #     #              c="w", capsize=0, mec="b", ecolor="0.5")
+    #     plt.minorticks_on()
+    #     if j != len(lick) -1 :
+    #         ax.xaxis.set_ticklabels([])
+    #     else:
+    #         plt.xlabel(r"R (kpc)")
+    #         ax.set_xticklabels(["0.1", "1", "10"])
+    #     plt.ylabel(indices[j], fontsize=10)
+    #     ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+    #     plt.ylim(ylims[j])
+    #     # Histograms
+    #     ax = plt.subplot(gs2[j, 2])
+    #     plt.minorticks_on()
+    #     ax.hist(ll[notnans], orientation="horizontal", color="r",
+    #             ec="k")
+    #     ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+    #     ax.xaxis.set_ticklabels([])
+    #     ax.yaxis.set_ticklabels([])
+    #     plt.ylim(ylims[j])
+    # plt.savefig("figs/lick_radius_combined.pdf",
+    #             bbox_inches="tight", transparent=False)
