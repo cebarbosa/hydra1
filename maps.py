@@ -123,8 +123,8 @@ def merge_polys():
     return np.array(newpolys)
         
 def merge_tables():
-    files = ["ppxf_results.dat", "lick_vcorr_ppxf.tsv", "populations.txt",
-             "lick_mc_errs_400.txt",
+    files = ["ppxf_results.dat", "lick_corr.tsv", "populations.txt",
+             "mc_lick_nsim10.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
     s1 = np.genfromtxt(files[0], usecols=(0,), dtype=None).tolist()
@@ -1460,14 +1460,14 @@ if __name__ == "__main__":
     # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
-    make_sn()
+    # make_sn()
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
     # make_kin_summary(loess=False)
     ####################################################
     # Produce maps for Lick indices
-    # make_lick2(loess=False, rlims=40)
+    make_lick2(loess=False, rlims=40)
     #Produce and array of maps
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)

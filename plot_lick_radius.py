@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.optimize import curve_fit
 from scipy.interpolate import  LinearNDInterpolator as interpolator
+from scipy.interpolate import interp1d
+from scipy import ndimage
 
 from config import *
 
@@ -55,6 +57,16 @@ def mask_slits():
     mask = data[~np.in1d(data[:,0], mask)]
     np.savetxt("results_masked.tab", mask, fmt="%s")
     return "results_masked.tab"
+
+def movingrms(x, y, window_size=10):
+    a = np.column_stack((x,y))
+    a = a[np.argsort(a[:,0])]
+    window = np.ones(window_size)/float(window_size)
+    rms = np.sqrt(np.convolve(a[:,1], window, 'same'))
+    rms = ndimage.filters.gaussian_filter(rms, 2.5)
+    b = np.column_stack((a[:,0], rms))
+    b = b[~np.isnan(rms)]
+    return b
           
 if __name__ == "__main__":
     model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
@@ -157,49 +169,57 @@ if __name__ == "__main__":
     #########################################################################
     # Bin data for gradients
     if log:
-        rbinnum, redges = np.histogram(r, bins=5, range=(r_tran,r.max()))
+        rbinnum, redges = np.histogram(r, bins=8, range=(r_tran,r.max()))
     else:
-        rbinnum, redges = np.histogram(r, bins=6, range=(10**(r_tran),10**.8))
+        rbinnum, redges = np.histogram(r, bins=8, range=(10**(r_tran),10**.8))
     data_r = []
     rbins = []
     errs_r = []
     lick_masked = np.ma.array(lick, mask=np.isnan(lick))
     lickerrs_masked = np.ma.array(lickerr, mask=np.isnan(lick))
     for i, bin in enumerate(rbinnum):
-        idx = np.logical_and(r > redges[i], r< redges[i+1])
+        idx = np.logical_and(r >= redges[i], r < redges[i+1])
         if not len(np.where(idx)[0]):
             continue
         median = True
         if median:
-            data_r.append(np.ma.median(lick_masked[:,idx].T, axis=0))
+            m = np.ma.median(lick_masked[:,idx].T, axis=0) # median
+            data_r.append(m)
             rbins.append(np.ma.median(r[idx], axis=0))
         else:
             data_r.append(np.ma.average(lick_masked[:,idx].T, axis=0,
                                      weights=np.power(10, -0.4*mu[idx])))
             rbins.append(np.ma.average(r[idx], axis=0,
                                      weights=np.power(10, -0.4*mu[idx])))
-        sigma = np.std(lick_masked[:,idx].T, axis=0)
-        errorbars = np.mean(lickerrs_masked[:,idx], axis=1)
-        errs_r.append(np.sqrt(sigma**2 + errorbars**2))
+        sigma_mad = 1.4826 * np.ma.median(np.abs(lick_masked[:,idx].T - m),
+                                          axis=0)
+        sigma =  np.ma.std(lick_masked[:,idx].T, axis=0)
+        errs_r.append(sigma_mad)
+
     data_r = np.array(data_r)
     rbins = np.array(rbins)
     errs_r = np.array(errs_r)
     #########################################################################
     # Taking only inner region for gradients in NGC 3311
     if log:
-        idx3311 = np.where(r<=r_tran)[0]
+        idx3311 = np.where(r <= r_tran)[0]
+        idxhalo = np.where(r > r_tran)[0]
     else:
-        idx3311 = np.where(r<10**(r_tran))[0]
+        idx3311 = np.where(r <= 10**(r_tran))[0]
+        idxhalo = np.where(r > 10**(r_tran))[0]
     r3311 = r[idx3311]
+    rhalo = r[idxhalo]
     lick3311 = lick[:,idx3311]
+    lickhalo = lick[:,idxhalo]
     errs1_3311 = lickerr[:,idx3311]
+    errs_halo = lickerr[:,idxhalo]
     #########################################################################
     # First figure, simple indices
     app = "_pa" if restrict_pa else ""
     mkfig1 = True
-    gray = "0.6 "
+    gray = "0.8"
     if mkfig1:
-        plt.figure(1, figsize = (6, 12))
+        plt.figure(1, figsize = (6, 13))
         gs = gridspec.GridSpec(7,1)
         gs.update(left=0.15, right=0.95, bottom = 0.1, top=0.94, wspace=0.1,
                   hspace=0.08)
@@ -214,22 +234,20 @@ if __name__ == "__main__":
             notnans = ~np.isnan(ll)
             ax = plt.subplot(gs[j])
             ax.errorbar(loubser12[:,0], loubser12[:,j+1],
-                        yerr=loubser12_errs[:,j+1], color="g", ecolor="g",
-                        fmt="d", mec="g", capsize=0,
-                        label= "Loubser et al. 2012", alpha=0.5)
+                        yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
+                        fmt="x", mec="r", capsize=0,
+                        label= "Loubser et al. 2012", alpha=1, ms=7, mew=2.5)
             ydata = ll[notnans]
-            mad = np.median(np.abs(ydata - np.median(ydata)))
             ax.errorbar(r[notnans], ydata, yerr=lickerr[j][notnans],
                         fmt="o", color=gray, ecolor=gray, capsize=0, mec=gray,
-                        label=labels[0], ms=6., alpha=0.5)
-            # print np.median(lodo[:,j+1]) - np.median(ydata[r>r_tran])
-            ax.errorbar(rbins, data_r[:,j], yerr = errs_r[:,j], fmt="s",
-                    color="r", ecolor="r", capsize=0, mec="r", ms=7,
-                    zorder=100, label=labels[2])
+                        label=labels[0], ms=5.5, alpha=1, markerfacecolor="none", mew=2 )
+            # ax.errorbar(rbins, data_r[:,j], yerr = errs_r[:,j], fmt="s",
+            #         color="r", ecolor="k", capsize=0, mec="k", ms=7,
+            #         zorder=100, label=labels[2], markerfacecolor="none", mew=2)
             ax.errorbar(lodo[:,0], lodo[:,j+1],
                          yerr = lodoerr[:,j+1],
                          fmt="^", c="b", capsize=0, mec="b", ecolor="0.5",
-                         label=labels[1], ms=6., alpha=0.5)
+                         label=labels[1], ms=8., alpha=1)
             ax.errorbar(dwarf[0],
                          dwarf[j+1], yerr=dwarferr[j+1], fmt="^",
                          c="b", capsize=0, mec="b", ecolor="0.5", ms=6,
@@ -239,12 +257,15 @@ if __name__ == "__main__":
                 ax.xaxis.set_ticklabels([])
             else:
                 plt.xlabel(r"$\log$ R / R$_{\mbox{e}}$")
-            plt.ylabel(indices[j], fontsize=10)
+            plt.ylabel(indices[j])
             ax.yaxis.set_major_locator(plt.MaxNLocator(5))
             if j == 0:
-                leg = ax.legend(prop={'size':8}, loc=2, ncol=2, fontsize=10)
-            add = 0 if j != 0 else .4
-            ylim = plt.ylim(np.median(ydata)-8*mad, np.median(ydata)+8*mad+add)
+                leg = ax.legend(prop={'size':8}, loc=2, ncol=1, fontsize=10)
+            add = 0 if j != 0 else 2
+            sigma_mad = 1.48 * np.median(np.abs(ydata - np.median(ydata)))
+            ym = np.ceil(np.median(ydata)-5 * sigma_mad)
+            yp = np.floor(np.median(ydata)+5*sigma_mad+add)
+            ylim = plt.ylim(ym, yp)
             ##################################################################
             # Measuring gradients
             ##################################################################
@@ -258,8 +279,26 @@ if __name__ == "__main__":
             if not log:
                 x = 10**x
             y = line(x, popt[0], popt[1])
-            ax.plot(x, y, "--k", lw=2, zorder=1)
+            lll, = ax.plot(x, y, "--k", lw=2, zorder=10000)
+            lll.set_dashes([10, 3])
             ##################################################################
+            # Halo
+            l = lickhalo[j]
+            lerr = errs_halo[j]
+            mask = np.logical_or(~np.isnan(l), ~np.isnan(lerr))
+            print lerr[mask]
+            raw_input()
+            # print l[mask].min(), l[mask].max()
+            # raw_input()
+            popth, pcovh = curve_fit(line, rhalo[mask], l[mask], sigma=lerr[mask])
+            pcovh = np.sqrt(np.diagonal(pcovh))
+            x = np.linspace(r_tran, 0.7, 100)
+            if not log:
+                x = 10**x
+            y = line(x, popth[0], popth[1])
+            lll, = ax.plot(x, y, "-g", lw=1.5, zorder=10000)
+            lll.set_dashes([10, 3])
+            #################################################################
             # Ploting rms 1%
             rms = np.loadtxt(os.path.join(tables_dir,
                                     "rms_1pc_lick_{0}.txt".format(j)))
@@ -269,7 +308,7 @@ if __name__ == "__main__":
                             edgecolor="none", color="y",
                             linewidth=0, alpha=0.5)
             ##################################################################
-            # Outer halo
+            # Outer halo in bins
             popt2, pcov2 = curve_fit(line, rbins, data_r[:,j], sigma=errs_r[:,j])
             pcov2 = np.sqrt(np.diagonal(pcov2))
             x = np.linspace(r_tran, r.max(), 100)
@@ -291,7 +330,7 @@ if __name__ == "__main__":
             # Draw arrows to indicate central limits
             ax.annotate("", xy=(-1.12, loubser[j]), xycoords='data',
             xytext=(-1.3, loubser[j]), textcoords='data',
-            arrowprops=dict(arrowstyle="<-", connectionstyle="arc3", ec="g",
+            arrowprops=dict(arrowstyle="<-", connectionstyle="arc3", ec="r",
                             lw=2))
             ##################################################################
             ax.set_xlim(-1.35, 1.)
@@ -334,8 +373,8 @@ if __name__ == "__main__":
         ax = plt.subplot(gs2[j, 0:2], xscale="log")
         notnans = ~np.isnan(ll)
         ax.errorbar(r[notnans], ll[notnans], yerr=lerr[notnans], 
-                    fmt="o", color="r",
-                    ecolor=gray, capsize=0, mec="k")
+                    fmt="d", color="r",
+                    ecolor=gray, capsize=0, mec="k", markerfacecolor="none")
         # plt.errorbar(lodo2[:,0], lodo2[:,j+1],
         #              yerr=lodo2err[:,j+1], fmt="+", c="b", capsize=0,
         #              mec="b", ecolor="0.5", label=None, ms=10)

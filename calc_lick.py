@@ -13,13 +13,10 @@ import pickle
 import numpy as np
 import pyfits as pf
 from scipy.interpolate import NearestNDInterpolator as interpolator
-from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 from config import *
 import lector as lector
 from run_ppxf import pPXF
-import ppxf_util as util
 
 def correct_indices(indices, inderr, indtempl, indtempl_b, types):
     """ Make corrections for the broadening in the spectra."""
@@ -83,15 +80,6 @@ def check_intervals(setupfile, bands, vel):
                 goodbands[i] = 1
     return np.where(goodbands == 1, 1, np.nan)
 
-def get_model_range():
-    """ Get the range for the indices according to models. """
-    modeldata = np.loadtxt(os.path.join(tables_dir, "models_thomas_2010.dat"))
-    indices = modeldata[:,3:].T
-    ranges = np.zeros((len(indices), 2))
-    for i, index in enumerate(indices):
-        ranges[i] = [index.min(), index.max()]
-    return ranges
-    
 class BroadCorr:
     """ Wrapper for the interpolated model."""
     def __init__(self, table): 
@@ -160,10 +148,6 @@ if __name__ == "__main__":
     os.chdir(workdir)
     if not os.path.exists(os.path.join(workdir, "logs")):
         os.mkdir(os.path.join(workdir, "logs"))
-    lims = get_model_range()
-    lim_excess =  0.5 * np.abs(np.diff(lims)).T[0]
-    lims[:,0] -= lim_excess
-    lims[:,1] += lim_excess
     kinfile = "ppxf_results.dat"
     specs = np.genfromtxt(kinfile, usecols = (0,), dtype=None).tolist()
     # specs = ["fin1_n3311inn1_s31.fits"]
@@ -241,17 +225,11 @@ if __name__ == "__main__":
         lick3 += offset
         lick4 += offset
         ######################################################################
-        # Clip arrays to remove unreasonable results
-        a = np.argwhere(~np.isnan(lick3)).T[0]
-        for idx in a:
-            if lick3[idx] <= lims[idx,0] or  lick3[idx] > lims[idx,1]:
-                lick3[idx] = np.nan
-        clipped_lick = np.clip(lick, lims[:,0], lims[:,1])
         # Convert to string
         ######################################################################
-        lick = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick])
-        lick2 = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick2])
-        lick3 = "".join(["{0:10}".format("{0:.5f}".format(x)) for x in lick3])
+        lick = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick])
+        lick2 = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick2])
+        lick3 = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick3])
         # Append to output
         results.append("{0:28s}".format(spec) + lick)
         results3.append("{0:28s}".format(spec) + lick3)

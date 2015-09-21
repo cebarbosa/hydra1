@@ -25,10 +25,10 @@ from load_templates import stellar_templates, emission_templates, \
 def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
              degree=20, pkls=None, plot=False):
     """ Run pPXF in a list of spectra"""
-    if pkls == None:
-        pkls = [x.replace(".fits", ".pkl") for x in spectra]
     if isinstance(spectra, str):
         spectra = [spectra]
+    if pkls == None:
+        pkls = [x.replace(".fits", ".pkl") for x in spectra]
     ##########################################################################
     # Load templates for both stars and gas
     star_templates, logLam2, delta, miles= stellar_templates(velscale)
@@ -332,19 +332,25 @@ if __name__ == '__main__':
     wdir = home + "/single2"
     os.chdir(wdir)
     spectra = speclist()
+    # spectra = "fin1_n3311cen2_s39.fits"
     ##########################################################################
     # Go to the main routine of fitting
-    for spec in spectra:
-        pp = pPXF(spec, velscale)
-        if pp.ncomp == 1:
-            continue
-        if pp.sol[0][1] < pp.sol[1][1]:
-            run_ppxf(spec, velscale, ncomp=1,has_emission=0, mdegree=-1,
-                     degree=12, plot=False)
+    # run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
+    #          degree=12, plot=True)
+    # plt.pause(0.001)
+    # plt.show(block=1)
+    # for spec in spectra:
+    #     pp = pPXF(spec, velscale)
+    #     if pp.ncomp == 1:
+    #         continue
+    #     if pp.sol[0][1] < pp.sol[1][1]:
+    #         print spec
+    #         run_ppxf(spec, velscale, ncomp=1,has_emission=0, mdegree=-1,
+    #                  degree=12, plot=False)
     ##########################################################################
     # Make_table produces a table with summary of results and errors
     #spectra = [x for x in os.listdir(".") if x.endswith(".fits")]
     # spectra = speclist()
     # make_table(spectra, "ppxf_results_mc200.dat", mc=True, nsim=200)
-    # make_table(spectra, "ppxf_results.dat", mc=False)
+    make_table(spectra, "ppxf_results.dat", mc=False)
     ##########################################################################

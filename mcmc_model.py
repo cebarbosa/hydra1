@@ -43,15 +43,6 @@ class Dist():
         self.x = np.linspace(lims[0], lims[1]+1, 1000)
         self.MAPP = self.x[np.argmax(self.pdf(self.x))]
         return
-        
-def get_model_range(table):
-    """ Get the range for the indices according to models. """
-    modeldata = np.loadtxt(table)
-    indices = modeldata[:,3:].T
-    ranges = np.zeros((len(indices), 2))
-    for i, index in enumerate(indices):
-        ranges[i] = [index.min(), index.max()]
-    return ranges
 
 def get_coefficients(map_):
     return [{str(variable): variable.value} for variable in map_.variables]
@@ -61,7 +52,7 @@ def read_data(tab1, tab2):
     s2 = np.genfromtxt(tab2, usecols=(0,), dtype=None).tolist()
     sref = [x for x in s1 if x in s2]
     sref.sort()
-    data = np.loadtxt(tab1, usecols=np.arange(1,26))
+    data = np.loadtxt(tab1, usecols=np.arange(1,25))
     errs = np.loadtxt(tab2, usecols=np.arange(1,26))
     idx1 = np.array([s1.index(x) for x in sref])
     idx2 = np.array([s2.index(x) for x in sref])
@@ -69,6 +60,19 @@ def read_data(tab1, tab2):
     errs = errs[idx2]
     s1 = np.array(s1)[idx1]
     return s1, data, errs
+
+def get_model_lims():
+    """ Get the range for the indices according to models. """
+    modeldata = np.loadtxt(os.path.join(tables_dir, "models_thomas_2010.dat"))
+    indices = modeldata[:,3:].T
+    lims = np.zeros((len(indices), 2))
+    for i, index in enumerate(indices):
+        lims[i] = [index.min(), index.max()]
+    lim_excess =  0.5 * np.abs(np.diff(lims)).T[0]
+    lims[:,0] -= lim_excess
+    lims[:,1] += lim_excess
+    return lims
+
 
 if __name__ == "__main__":
     lims = [[0., 15.], [-2.25, 0.67], [-0.3, 0.5]]
@@ -78,10 +82,21 @@ if __name__ == "__main__":
     alpha_dist = pymc.Uniform(name="alpha_dist", lower=-0.3, upper=0.5)
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
-    spectra, data, errs = read_data("lick_vcorr_ppxf.tsv",
-                                    "lick_mc_errs_400.txt")
+    spectra, data, errs = read_data("lick_corr.tsv",
+                                    "lick_mc_errs_10.txt")
+    lims = get_model_lims()
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):
+        ######################################################################
+        # Get valid indices
+        nans = np.where(~np.isnan(obsdata))[0]
+        indcols = np.where(~np.isnan(obsdata))[0]
+        ######################################################################
+        # Clip indices with unnexpected values according to model
+        for idx in indcols:
+             if obsdata[idx] <= lims[idx,0] or  obsdata[idx] > lims[idx,1]:
+                 obsdata[idx] = np.nan
+        ######################################################################
         dbname = spec.replace(".fits", "_db")
         dbfolder = os.path.join(working_dir, dbname)
         if os.path.exists(dbfolder):
@@ -92,9 +107,6 @@ if __name__ == "__main__":
                 f.write("# Spectra\tAge(Gyr)\tAge-\tAge+\t[Z/H]\t[Z/H]"
                         "-\t[Z/H]+\t[alpha/Fe]\t[alpha/Fe]-\t[alpha/Fe]+\n")
         csvfile = dbname + ".csv"
-        print spec
-        nans = np.where(~np.isnan(obsdata))[0]
-        indcols = np.where(~np.isnan(obsdata))[0]
         if len(indcols) == 0:
             continue
         # Removing Mg1 and Mg2

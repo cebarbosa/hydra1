@@ -15,7 +15,7 @@ if __name__ == "__main__":
     os.chdir(os.path.join(home, "single2"))
     folders = [x for x in os.listdir(".") if os.path.isdir(x)]
     for folder in folders:
-        if folder in ["figs", "logs"]:
+        if folder in ["figs", "logs", "mc_logs"]:
             continue
         else:
             shutil.rmtree(folder)

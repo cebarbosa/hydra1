@@ -85,13 +85,13 @@ if __name__ == "__main__":
     l12_table = os.path.join(tables_dir, "loubser12_populations.txt")
     r_l12 = np.loadtxt(l12_table, usecols=(0,)) + np.log10(26.6/re)
     l12 = np.loadtxt(l12_table, usecols=(1,4,7,4)).T
-    l12[0] *= 10**9
+    l12[0] += 9
     l12[3] += -0.94 * l12[2]
     l12_errs1= np.loadtxt(l12_table, usecols=(2,5,8,5)).T
-    l12_errs1[0] *= 10**9
+    l12_errs1[0] += 9
     l12_errs1[3] += -0.94 * l12_errs1[2]
     l12_errs2 = np.loadtxt(l12_table, usecols=(3,6,9,6)).T
-    l12_errs2[0] *= 10**9
+    l12_errs2[0] += 9
     l12_errs2[3] += -0.94 * l12_errs2[2]
     l12_sb = np.loadtxt(l12_table, usecols=(10,))
     for i in range(3):
@@ -105,12 +105,10 @@ if __name__ == "__main__":
     ##########################################################################
     # Read SSP parameters and convert errors for plot
     data = np.loadtxt(table, usecols=(69, 72, 75, 84)).T
-    data[0] *= 10**9
+    data[0] += 9.
     x, y, sn = np.loadtxt(table, usecols=(1,2,14)).T
     errs1 = np.loadtxt(table, usecols=(70,73,76,85)).T
     errs2 = np.loadtxt(table, usecols=(71,74,77,86)).T
-    errs1[0] *= 10**9
-    errs2[0] *= 10**9
     for i in range(4):
         errs1[i] = data[i] - errs1[i]
         errs2[i] = errs2[i] - data[i]
