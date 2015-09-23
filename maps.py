@@ -461,6 +461,23 @@ def make_sb(im="vband"):
     ysize, xsize = canvas.data.shape
     ypix =  (y-y0)/(y1-y0) * ysize
     xpix = (x-x0)/(x1-x0) * xsize
+    ##########################################################################
+    # Calculate SB for Lodo spectra
+    rl, pal = np.loadtxt(os.path.join(tables_dir, "coccato2011_indices.tsv"),
+                         usecols=(1,2)).T
+    xl, yl = polar2cart(rl, pal)
+    xl = canvas.arcsec2kpc(xl)
+    yl = canvas.arcsec2kpc(yl)
+    ypixl =  (yl-y0)/(y1-y0) * ysize
+    xpixl = (xl-x0)/(x1-x0) * xsize
+    for xx,yy in zip(xpixl, ypixl):
+        print xx, yy,
+        try:
+            print datasmooth[yy,xx]
+        except:
+            print
+    raw_input(404)
+    ##########################################################################
     sb = []
     for xx,yy in zip(xpix, ypix):
         sb.append(datasmooth[yy,xx])
@@ -662,10 +679,10 @@ def make_kin_summary(loess=True):
                 r"h3", r"h4"]
     cb_label = [r"V$_{\rm LOS}$ [km/s]", r"$\sigma_{\rm LOS}$ [km/s]",
                 r"$h_3$", r"$h_4$"]
-    lims = [[3800, 4000], [150, 450], [-.08, 0.08], [-0.05, .15],
+    lims = [[3800, 4000], [150, 400], [-.08, 0.08], [-0.05, .15],
              [None, None], [None, None], [None, None], [None, None],
              [None, None]]
-    xcb = [0.07, 0.55]
+    xcb = [0.09, 0.56]
     xcb = xcb + xcb
     yc1 = 0.56
     yc2 = 0.085
@@ -673,9 +690,9 @@ def make_kin_summary(loess=True):
     cmap = brewer2mpl.get_map('Reds', 'sequential', 9).mpl_colormap
     cmap = "cubelaw"
     # cmap = nc.cmap_map(lambda x: x*0.5 + 0.45, cmap)
-    fig = plt.figure(figsize=(12.5, 12))
+    fig = plt.figure(figsize=(11.5, 11))
     gs = gridspec.GridSpec(2,2)
-    gs.update(left=0.045, right=0.988, bottom=0.05, top=0.99, hspace=0.03,
+    gs.update(left=0.06, right=0.988, bottom=0.05, top=0.99, hspace=0.03,
               wspace=0.03)
     ylabels = [1,0,1,0]
     xlabels = [0,0,1,1]
@@ -703,7 +720,7 @@ def make_kin_summary(loess=True):
         ax = plt.subplot(gs[i])
         norm = Normalize(vmin=lims[i][0], vmax=lims[i][1])
         coll = PolyCollection(polygons_bins[good], array=v, cmap=cmap,
-                              edgecolors='none', norm=norm)
+                              edgecolors='w', norm=norm)
         draw_map(fig, ax, coll)
         draw_contours("vband", fig, ax)
         plt.gca().add_patch(Rectangle((18,-36),20,10, alpha=1, zorder=10,
@@ -842,10 +859,6 @@ def make_lick2(loess=False, rlims=40):
     yc2 = 0.104
     ycb = [yc1, yc1, yc1, yc2, yc2, yc2]
     cmap = brewer2mpl.get_map('YlOrRd', 'sequential', 3).mpl_colormap
-    # cmap = cm.get_cmap("gray_r")
-    # cmap = "pink"
-    # cmap = cm.get_cmap("bone_r")
-    # cmap = nc.cmap_map(lambda x: x*0.54 + 0.43, cmap)
     cmap = nc.cmap_discretize(cmap, 6)
     fig = plt.figure(figsize=(13.5, 9))
     gs = gridspec.GridSpec(2,3)
@@ -1464,7 +1477,7 @@ if __name__ == "__main__":
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
-    # make_kin_summary(loess=False)
+    make_kin_summary(loess=0)
     ####################################################
     # Produce maps for Lick indices
     # make_lick2(loess=False, rlims=40)
@@ -1472,10 +1485,10 @@ if __name__ == "__main__":
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    make_ssp()
+    # make_ssp()
     #####################################################
     # make_other()
-    # make_sb(im="residual")
+    # make_sb(im="vband")
     #####################################################
     # Make interpolated maps with LOESS
     # make_maps_interp()
