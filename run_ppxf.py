@@ -329,14 +329,14 @@ def speclist():
 if __name__ == '__main__':
     ##########################################################################
     # Change to data directory according to setup.py program
-    wdir = home + "/single2"
+    wdir = home + "/m5pc"
     os.chdir(wdir)
     spectra = speclist()
     # spectra = "fin1_n3311cen2_s39.fits"
     ##########################################################################
     # Go to the main routine of fitting
-    # run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
-    #          degree=12, plot=True)
+    run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
+             degree=12, plot=True)
     # plt.pause(0.001)
     # plt.show(block=1)
     # for spec in spectra:

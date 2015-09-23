@@ -144,7 +144,7 @@ class Vdisp_corr_k04():
         return newlick
 
 if __name__ == "__main__":
-    workdir = os.path.join(home, "single2")
+    workdir = os.path.join(home, "m5pc")
     os.chdir(workdir)
     if not os.path.exists(os.path.join(workdir, "logs")):
         os.mkdir(os.path.join(workdir, "logs"))

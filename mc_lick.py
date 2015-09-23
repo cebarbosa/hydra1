@@ -88,7 +88,10 @@ def write_table(specs, Nsim):
     return
 
 if __name__ == "__main__":
-    wdir = os.path.join(home, "single2")
+    wdir = os.path.join(home, "p5pc")
+    outdir = os.path.join(wdir, "mc_logs")
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     os.chdir(wdir)
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
     specs = speclist()
