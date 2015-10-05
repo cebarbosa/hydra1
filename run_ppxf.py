@@ -14,7 +14,6 @@ import pyfits as pf
 from scipy import ndimage
 from scipy.signal import medfilt
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 from ppxf import ppxf
 import ppxf_util as util
@@ -227,15 +226,15 @@ class pPXF():
             pp = pickle.load(f)
         self.__dict__ = pp.__dict__.copy()
         self.spec = spec
-        if not os.path.exists(os.path.join(os.getcwd(), spec)):
-            self.spec = os.path.join(data_dir, spec)
+        # if not os.path.exists(os.path.join(os.getcwd(), spec)):
+        #     self.spec = os.path.join(data_dir, spec)
         self.velscale = velscale
-        self.w = wavelength_array(self.spec)
+        self.w = wavelength_array(os.path.join(data_dir, spec))
         self.flux = pf.getdata(self.spec)
         self.flux_log, self.logw, velscale = util.log_rebin(
                         [self.w[0], self.w[-1]], self.flux, velscale=velscale)
         self.w_log = np.exp(self.logw)
-        self.header = pf.getheader(self.spec)
+        self.header = pf.getheader(os.path.join(data_dir, spec))
         self.lam = self.header['CRVAL1'] + np.array([0.,
                               self.header['CDELT1']*(self.header['NAXIS1']-1)])
         ######################################################################
@@ -329,7 +328,7 @@ def speclist():
 if __name__ == '__main__':
     ##########################################################################
     # Change to data directory according to setup.py program
-    wdir = home + "/m5pc"
+    wdir = home + "/p6pc"
     os.chdir(wdir)
     spectra = speclist()
     # spectra = "fin1_n3311cen2_s39.fits"

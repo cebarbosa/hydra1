@@ -12,12 +12,9 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 import matplotlib.gridspec as gridspec
-import cap_loess_2d as ll
 from scipy.optimize import curve_fit
-from scipy.interpolate import interp1d
 import brewer2mpl
 
 from config import *
@@ -145,11 +142,11 @@ if __name__ == "__main__":
         yc2err = ycerr[rc > r_tran]
         ######################################################################
         # Clip values according to the models
-        for z, zerr in [[yc1, yc1err], [yc2, yc2err]]:
-            for k in range(len(z)):
-                if z[k] < ylims[i][0] or z[k] > ylims[i][1]:
-                    z[k] = np.nan
-                    zerr[k] = np.nan
+        # for z, zerr in [[yc1, yc1err], [yc2, yc2err]]:
+        #     for k in range(len(z)):
+        #         if z[k] < ylims[i][0] or z[k] > ylims[i][1]:
+        #             z[k] = np.nan
+        #             zerr[k] = np.nan
         ######################################################################
         # Plot data in radial distance
         ######################################################################

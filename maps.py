@@ -124,7 +124,7 @@ def merge_polys():
         
 def merge_tables():
     files = ["ppxf_results.dat", "lick_corr.tsv", "populations.txt",
-             "mc_lick_nsim10.txt",
+             "mc_lick_nsim400.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
     s1 = np.genfromtxt(files[0], usecols=(0,), dtype=None).tolist()
@@ -378,7 +378,7 @@ def make_sn():
     sn = sn[good]
     ###############################################
     # Colorbar limits
-    vmin, vmax = 10, 35
+    vmin, vmax = 5, 25
     # Set limits for the plot
     norm = Normalize(vmin, vmax)
     ###############################################
@@ -386,7 +386,8 @@ def make_sn():
     cmap = brewer2mpl.get_map('Blues', 'sequential', 9).mpl_colormap
     # cmap = nc.cmap_map(lambda x: x*0.7 + 0.23, cm.get_cmap("cubehelix"))
     # cmap = nc.cmap_discretize(cmap, 8)
-    cmap = "cubelaw_r"
+    cmap = cm.get_cmap("cubelaw_r")
+    cmap = nc.cmap_discretize(cmap, 8)
     # cmap = "Spectral"
     # Produces a collection of polygons with colors according to S/N values
     coll = PolyCollection(polygons_bins[good], array=sn, cmap=cmap,
@@ -394,7 +395,7 @@ def make_sn():
     ###############################################                      
     # Initiate figure and axis for matplotlib
     fig, ax = plt.subplots(1, 1, figsize=(6.4,6), )
-    fig.subplots_adjust(left=0.08, right=0.985, bottom = 0.08, top=0.985,
+    fig.subplots_adjust(left=0.09, right=0.985, bottom = 0.09, top=0.98,
                         hspace = 0.05, wspace=0.06)
     ###############################################
     # ax.add_patch(Rectangle((-100, -100), 200, 200, facecolor="0.8", zorder=0,
@@ -412,12 +413,12 @@ def make_sn():
     ###############################################
     # Draw white rectangle in the position of the colorbar so background 
     # stars do not overplot the labels and ticks
-    # plt.gca().add_patch(Rectangle((18,-36),20,10, alpha=1, zorder=10,
-    #                     color="w"))
+    plt.gca().add_patch(Rectangle((18,-36),20,10, alpha=1, zorder=10000,
+                        color="w"))
     ###############################################
     # Draw the colorbar
     draw_colorbar(fig, ax, coll, ticks=np.linspace(vmin,vmax,5),
-                  cblabel=r"S/N per pixel")
+                  cblabel=r"S/N per pixel", cbar_pos=[0.16, 0.15, 0.17, 0.04])
     ##############################################
     # Write labels
     xylabels(ax)
@@ -874,8 +875,8 @@ def make_lick2(loess=False, rlims=40):
         good = np.where(((~np.isnan(vector)) & (sn>sn_cut)))[0]
         v = vector[good]
         robust_sigma =  1.4826 * np.median(np.abs(v - np.median(v)))
-        vmin = np.median(v) - 1.5 * robust_sigma
-        vmax = np.median(v) + 1.5 * robust_sigma
+        vmin = np.median(v) - 1.0* robust_sigma
+        vmax = np.median(v) + 1.0 * robust_sigma
         sn_high = np.where(((~np.isnan(vector)) & (sn>=sn_thres)))[0]
         sn_low = np.delete(good, sn_high)
         vector_low = ll.loess_2d(xall[sn_low], yall[sn_low], vector[sn_low],
@@ -1333,7 +1334,7 @@ def make_ssp(loess=False):
     # Read data values for Lick indices
     data = np.loadtxt(outtable, usecols=(69,72,75,84)).T
     # Changing units of age for log scale
-    data[0] = np.log10(10**9 * data[0])
+    data[0] += 9.
     # Read spectra name
     s = np.genfromtxt(outtable, usecols=(0,), dtype=None).tolist()
     ########################################################
@@ -1372,8 +1373,8 @@ def make_ssp(loess=False):
         good = np.where(((~np.isnan(vector)) & (sn>sn_cut)))[0]
         v = vector[good]
         robust_sigma =  1.4826 * np.median(np.abs(v - np.median(v)))
-        vmin = np.median(v)  - 1.2 * robust_sigma
-        vmax = np.median(v) + 1.2 * robust_sigma
+        vmin = np.median(v)  - 0.8 * robust_sigma
+        vmax = np.median(v) + 0.8 * robust_sigma
 
         vmin = lims[i][0] if lims[i][0] else vmin
         vmax = lims[i][1] if lims[i][1] else vmax
@@ -1430,7 +1431,7 @@ if __name__ == "__main__":
                                                      order=0.)
     ####################################################
     # Switch to data folder
-    workdir = os.path.join(home, "single2")
+    workdir = os.path.join(home, "p5pc")
     os.chdir(workdir)
     ####################################################
     # Create folder for output files
@@ -1477,7 +1478,7 @@ if __name__ == "__main__":
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
-    make_kin_summary(loess=0)
+    # make_kin_summary(loess=0)
     ####################################################
     # Produce maps for Lick indices
     # make_lick2(loess=False, rlims=40)

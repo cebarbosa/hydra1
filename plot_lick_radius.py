@@ -12,14 +12,18 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import matplotlib.gridspec as gridspec
 from scipy.optimize import curve_fit
 from scipy.interpolate import  LinearNDInterpolator as interpolator
-from scipy.interpolate import interp1d
+from matplotlib.colors import Normalize
 from scipy import ndimage
+import brewer2mpl
+
 
 from config import *
 from mcmc_model import get_model_lims
+import newcolorbars as nc
 
 class Ssp:
     """ Wrapper for the interpolated model."""
@@ -223,6 +227,11 @@ if __name__ == "__main__":
     lims = get_model_lims()
     idx = np.array([12,13,16,17,18,19,20])
     lims = lims[idx]
+    # Setting the colormap properties for the scatter plots
+    cmap = brewer2mpl.get_map('Blues', 'sequential', 9).mpl_colormap
+    cmap = nc.cmap_discretize(cmap, 3)
+    color = cm.get_cmap(cmap)
+    norm = Normalize(vmin=0, vmax=30)
     if mkfig1:
         plt.figure(1, figsize = (6, 13))
         gs = gridspec.GridSpec(7,1)
@@ -240,23 +249,28 @@ if __name__ == "__main__":
             ax = plt.subplot(gs[j])
             ydata = ll[notnans]
             ax.errorbar(r[notnans], ydata, yerr=lickerr[j][notnans],
-                        fmt="o", color=gray, ecolor=gray, capsize=0, mec=gray,
-                        label=labels[0], ms=5.5, alpha=1, markerfacecolor="none", mew=2 )
+                        fmt=None, color=gray, ecolor=gray, capsize=0, mec=gray,
+                        ms=5.5, alpha=1, markerfacecolor="none",
+                        mew=2 )
+            ax.scatter(r[notnans], ydata, c=sn[notnans], s=45, cmap=cmap, zorder=2,
+                        lw=0.1, norm=norm)
+            ax.plot(1000, 1000, "o", mew=0.5, c=color(0), label=r"S/N $< 10$")
+            ax.plot(1000, 1000, "o", mew=0.5, c=color(0.5),label=r"$\leq 10$ S/N $\leq 20$")
+            ax.plot(1000, 1000, "o", mew=0.5, c=color(1.), label=r"S/N $> 20$")
             ax.errorbar(loubser12[:,0], loubser12[:,j+1],
                         yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
-                        fmt="x", mec="r", capsize=0,
-                        label= "Loubser et al. 2012", alpha=1, ms=7, mew=2.5)
+                        fmt="s", mec="k", capsize=0, lw=0.2,
+                        label= "Loubser et al. 2012", alpha=1, ms=7)
             # ax.errorbar(rbins, data_r[:,j], yerr = errs_r[:,j], fmt="s",
             #         color="r", ecolor="k", capsize=0, mec="k", ms=7,
             #         zorder=100, label=labels[2], markerfacecolor="none", mew=2)
             ax.errorbar(lodo[:,0], lodo[:,j+1],
                          yerr = lodoerr[:,j+1],
-                         fmt="^", c="b", capsize=0, mec="b", ecolor="0.5",
-                         label=labels[1], ms=8., alpha=1)
+                         fmt="^", c="y", capsize=0, mec="k", ecolor="0.5",
+                         label=labels[1], ms=7., alpha=1, lw=0.5)
             ax.errorbar(dwarf[0],
-                         dwarf[j+1], yerr=dwarferr[j+1], fmt="^",
-                         c="b", capsize=0, mec="b", ecolor="0.5", ms=6,
-                         alpha=0.5)
+                        dwarf[j+1], yerr=dwarferr[j+1], fmt="^", c="y",
+                        capsize=0, mec="k", ecolor="0.5", ms=7., lw=0.5)
             plt.minorticks_on()
             if j+1 != len(lick):
                 ax.xaxis.set_ticklabels([])
@@ -265,7 +279,8 @@ if __name__ == "__main__":
             plt.ylabel(indices[j])
             ax.yaxis.set_major_locator(plt.MaxNLocator(5))
             if j == 0:
-                leg = ax.legend(prop={'size':10}, loc=2, ncol=1, fontsize=14)
+                leg = ax.legend(prop={'size':10}, loc=2, ncol=2, fontsize=14,
+                                scatterpoints = 1, frameon=False)
             add = 0 if j != 0 else 2
             sigma_mad = 1.48 * np.median(np.abs(ydata - np.median(ydata)))
             ym = np.ceil(np.median(ydata)-8 * sigma_mad)
