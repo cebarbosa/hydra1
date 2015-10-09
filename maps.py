@@ -134,6 +134,8 @@ def merge_tables():
     s5 = np.genfromtxt(files[4], usecols=(0,), dtype=None).tolist()
     s6 = np.genfromtxt(files[5], usecols=(0,), dtype=None).tolist()
     sref = list(set(s1) & set(s2) & set(s3) & set(s4) & set(s5) & set(s6))
+    ignore = ["fin1_n3311{0}.fits".format(x) for x in ignore_slits]
+    sref = [x for x in sref if x not in ignore]
     if os.path.exists("template_mismatches.dat"):
         temp_mismatches = np.loadtxt("template_mismatches.dat",
                                      dtype=str).tolist()
@@ -408,8 +410,8 @@ def make_sn():
     # draw_contours("residual", fig, ax, c="k")
     draw_contours("vband", fig, ax, c="k")
     # Draw actual slit positions
-    canvas.draw_slits(ax, slit_type=1, fc="r", ec="r" )
-    canvas.draw_slits(ax, slit_type=3, fc="r", ec="r" )
+    canvas.draw_slits(ax, slit_type=1, fc="r", ec="r", ignore=ignore_slits )
+    canvas.draw_slits(ax, slit_type=3, fc="r", ec="r", ignore=ignore_slits )
     ###############################################
     # Draw white rectangle in the position of the colorbar so background 
     # stars do not overplot the labels and ticks
@@ -477,7 +479,6 @@ def make_sb(im="vband"):
             print datasmooth[yy,xx]
         except:
             print
-    raw_input(404)
     ##########################################################################
     sb = []
     for xx,yy in zip(xpix, ypix):
@@ -1431,23 +1432,22 @@ if __name__ == "__main__":
                                                      order=0.)
     ####################################################
     # Switch to data folder
-    workdir = os.path.join(home, "p5pc")
+    workdir = os.path.join(home, "single2")
     os.chdir(workdir)
     ####################################################
     # Create folder for output files
     ####################################################
     if not os.path.exists("figs"):
         os.mkdir("figs")
-    #####################################################################
-    # Produces the final table
-    #####################################################################
-    merge_tables()
     #######################################################
     # Use canvas properties to retrieve the id of the slits
     # Set slits to be used: 0-sky 1-halo 2-point sources, 3-HCC007
     #######################################################
     slits = [y for x,y in zip(canvas.slits.type, canvas.slits.ids) 
              if x in [1,3]]
+    ignore_slits = ["cen2_s24", "inn2_s21", "cen1_s22", "inn2_s34",
+                    "inn1_s22", "inn2_s27"]
+    slits = [x for x in slits if x not in ignore_slits]
     ####################################################
     # Positions of the slits
     xy = get_positions_by_slits(slits)
@@ -1466,8 +1466,12 @@ if __name__ == "__main__":
         polygons_bins = merge_polys() 
     else:
         s = [x.split(".")[0].split("_", 1)[1][5:] for x in specs]
-        idx = [slits.index(x) for x in s]
+        idx = [slits.index(x) for x in s if x in slits]
         polygons_bins =  polygons[idx]
+    #####################################################################
+    # Produces the final table
+    #####################################################################
+    merge_tables()
     ####################################################
     #Make find chart
     ####################################################
@@ -1486,7 +1490,7 @@ if __name__ == "__main__":
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    # make_ssp()
+    make_ssp()
     #####################################################
     # make_other()
     # make_sb(im="vband")
