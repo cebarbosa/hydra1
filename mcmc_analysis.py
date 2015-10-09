@@ -68,7 +68,7 @@ def hist2D(dist1, dist2):
     return
 
 if __name__ == "__main__":
-    working_dir = os.path.join(home, "p1pc")
+    working_dir = os.path.join(home, "p6pc")
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()

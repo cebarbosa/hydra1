@@ -13,6 +13,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+from pandas import rolling_median, rolling_std, rolling_apply
 
 from config import *
 
@@ -43,12 +44,12 @@ def match_data(s1, s2, d1):
     return d1[idx]
 
 if __name__ == "__main__":
-    cols = (0, 3, 39, 41, 47, 49, 51, 53, 55)
+    cols = (0, 3, 39, 41, 47, 49, 51, 53, 55, 82)
     data = mask_slits(os.path.join(home, "single2", "results.tab"),
                       cols=cols)
-    datap = mask_slits(os.path.join(home, "p5pc", "results.tab"),
+    datap = mask_slits(os.path.join(home, "p6pc", "results.tab"),
                       cols=cols)
-    datam = mask_slits(os.path.join(home, "m5pc", "results.tab"),
+    datam = mask_slits(os.path.join(home, "m6pc", "results.tab"),
                       cols=cols)
     ##########################################################################
     # Get intersection of data
@@ -67,41 +68,34 @@ if __name__ == "__main__":
                wspace=0.05)
     pars = [r"H$\beta$ (\AA)", r"Fe5015 (\AA)", r"Mg $b$ (\AA)",
             r"Fe5270 (\AA)", r"Fe5335 (\AA)", r"Fe5406 (\AA)", r"Fe5709 (\AA)"]
-    rms_r, rms_sb = [], []
     for i,j in enumerate((1,2,3,4,5,6,7)):
         ########################################
         # Differences as function of the radius
         ########################################
-        idx1 = np.argwhere(np.isfinite(datap[j])).T
-        idx2 = np.argwhere(np.isfinite(datam[j])).T
-        idx3 =  np.argwhere(np.isfinite(data[j])).T
-        idx = np.intersect1d(idx1, np.intersect1d(idx2, idx3))
-        diffp = datap[j][idx] - data[j][idx]
-        diffm = datam[j][idx] - data[j][idx]
+        idx = np.argwhere(np.isfinite(datap[j])).T
+        idxm = np.argwhere(np.isfinite(datam[j])).T
+        idxp =  np.argwhere(np.isfinite(data[j])).T
+        idxm = np.intersect1d(idx, idxm)
+        idxp = np.intersect1d(idx, idxp)
+        diffp = datap[j][idxp] - data[j][idxp]
+        diffm = datam[j][idxm] - data[j][idxm]
         diff = np.hstack((diffp, diffm))
-        rdiff = np.hstack((data[0][idx], data[0][idx]))
-        ind = rdiff.argsort()
-        diff = diff[ind]
-        rdiff = rdiff[ind]
-        r = np.min(rolling_window(rdiff, 50), axis=1)
-        diff_window = rolling_window(diff, 50)
-        median = np.median(diff_window, axis=1)
-        rms = np.zeros_like(median)
-        for k in range(len(median)):
-            rms[k] = 1.4826 * np.median(np.abs(diff_window[k] - np.median(diff_window[k])))
-        r = np.hstack((r, rdiff[-1]))
-        rms = np.hstack((rms, rms[-1]))
-        if i==0:
-            rms_r.append(rdiff)
-        rms_r.append(rms)
+        x = np.hstack((data[0][idxp], data[0][idxm]))
+        idx_sorted = x.argsort()
+        y = diff[idx_sorted]
+        x = x[idx_sorted]
+        xw = rolling_median(x, window=50, min_periods=1)
+        yw = rolling_apply(y, 50, mad, min_periods=1)
+        xw = np.hstack((xw, x.max()))
+        yw = np.hstack((yw, yw[-1]))
         ax = plt.subplot(gs[i])
         ax.minorticks_on()
-        ax.plot(data[0][idx], diffp, "ob", mec="none", alpha=1,
+        ax.plot(data[0][idxp], diffp, "ob", mec="none", alpha=0.8,
                 label=r"+1\%")
-        ax.plot(data[0][idx], diffm, "or", mec="none", alpha=1,
+        ax.plot(data[0][idxm], diffm, "or", mec="none", alpha=0.8,
                 label=r"-1\%")
         ax.axhline(y=0, ls="--", c="k")
-        ax.fill_between(r, rms, -rms, edgecolor="none", color="y",
+        ax.fill_between(xw, yw, -yw, edgecolor="none", color="y",
                         linewidth=0, alpha=0.5)
         if i != 6:
             ax.xaxis.set_ticklabels([])
@@ -110,11 +104,11 @@ if __name__ == "__main__":
         plt.ylabel(r"$\delta$ {0}".format(pars[i]), size=10)
         if i == 0:
             plt.legend(loc=0, ncol=2, prop={'size':10})
-        ax.set_ylim(-2*rms.max(), 2 * rms.max())
-        np.savetxt(os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i)),
-                   np.column_stack((r, rms)))
+        ax.set_ylim(-2 * yw.max(), 2 * yw.max())
+        # np.savetxt(os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i)),
+        #            np.column_stack((r, sb, rms)))
     # plt.pause(0.001)
-    plt.savefig(os.path.join(figures_dir, "sky_pm_1pc_lick.png"))
+    plt.savefig(os.path.join(figures_dir, "sky_pm_6pc_lick.png"))
     plt.show(block=False)
 
 

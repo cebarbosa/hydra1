@@ -7,11 +7,13 @@ Created on Tue Feb 25 14:22:29 2014
 Make simulations to derive errors on Lick indices including both noise and the 
 error on the determined velocity.
 """
+import os
+
 import numpy as np
 import multiprocessing as mp
 from scipy.stats import nanmedian
 
-from setup_n3311 import *
+from config import *
 import lector
 from calc_lick import BroadCorr
 from run_ppxf import pPXF, speclist
@@ -88,7 +90,7 @@ def write_table(specs, Nsim):
     return
 
 if __name__ == "__main__":
-    wdir = os.path.join(home, "m1pc")
+    wdir = os.path.join(home, "m6pc")
     outdir = os.path.join(wdir, "mc_logs")
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -98,7 +100,7 @@ if __name__ == "__main__":
     bands = os.path.join(tables_dir, "BANDS")
     lick_types = np.loadtxt(bands, usecols=(8,))
     lick_indices = np.genfromtxt(bands, usecols=(0,), dtype=None).tolist()
-    Nsim = 400
+    Nsim = 100
     header = table_header()
     if True:
         pool = mp.Pool()

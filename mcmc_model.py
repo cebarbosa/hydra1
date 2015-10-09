@@ -80,10 +80,10 @@ if __name__ == "__main__":
     age_dist = pymc.Uniform(name="age_dist", lower=1., upper=14.5)
     metal_dist = pymc.Uniform(name="metal_dist", lower=-2.25, upper=0.67)
     alpha_dist = pymc.Uniform(name="alpha_dist", lower=-0.3, upper=0.5)
-    working_dir = os.path.join(home, "p1pc")
+    working_dir = os.path.join(home, "p6pc")
     os.chdir(working_dir)
     spectra, data, errs = read_data("lick_corr.tsv",
-                                    "mc_lick_nsim400.txt")
+                                    "mc_lick_nsim100.txt")
     lims = get_model_lims()
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):

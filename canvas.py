@@ -112,7 +112,7 @@ class CanvasImage():
         return
 
     def draw_slits(self, ax, slit_type=1, fc="none", ec="k",
-                   amp=1.):
+                   amp=1., ignore=None):
         """ Draw slits of a given a numerical type. """
         ids = np.where(self.slits.type == slit_type)[0]
         rects = amp * self.calc_vertices(self.slits.x[ids], self.slits.y[ids],
@@ -120,7 +120,10 @@ class CanvasImage():
                                    self.slits.ang[ids] + self.posangle)
         codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO,
                  Path.CLOSEPOLY,]
-        for i, rect in enumerate(rects): 
+        for i, (rect, id) in enumerate(zip(rects, ids)):
+            if self.slits.ids[id] in ignore:
+                print "Ignoring", self.slits.ids[id]
+                continue
             path = Path(rect, codes)
             patch = patches.PathPatch(path, facecolor=fc, edgecolor=ec,
                                       alpha=1., linewidth=.3)
