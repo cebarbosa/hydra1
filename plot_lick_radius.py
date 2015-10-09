@@ -233,7 +233,7 @@ if __name__ == "__main__":
     color = cm.get_cmap(cmap)
     norm = Normalize(vmin=0, vmax=30)
     if mkfig1:
-        plt.figure(1, figsize = (6, 13))
+        plt.figure(1, figsize = (6, 14  ))
         gs = gridspec.GridSpec(7,1)
         gs.update(left=0.15, right=0.95, bottom = 0.1, top=0.94, wspace=0.1,
                   hspace=0.08)
@@ -252,25 +252,22 @@ if __name__ == "__main__":
                         fmt=None, color=gray, ecolor=gray, capsize=0, mec=gray,
                         ms=5.5, alpha=1, markerfacecolor="none",
                         mew=2 )
-            ax.scatter(r[notnans], ydata, c=sn[notnans], s=45, cmap=cmap, zorder=2,
-                        lw=0.1, norm=norm)
-            ax.plot(1000, 1000, "o", mew=0.5, c=color(0), label=r"S/N $< 10$")
-            ax.plot(1000, 1000, "o", mew=0.5, c=color(0.5),label=r"$\leq 10$ S/N $\leq 20$")
-            ax.plot(1000, 1000, "o", mew=0.5, c=color(1.), label=r"S/N $> 20$")
+            ax.scatter(r[notnans], ydata, c=sn[notnans], s=50, cmap=cmap, zorder=2,
+                        lw=0.5, norm=norm)
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(0), label=r"S/N $< 10$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(0.5),label=r"$10\leq$ S/N $\leq 20$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(1.), label=r"S/N $> 20$")
             ax.errorbar(loubser12[:,0], loubser12[:,j+1],
                         yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
                         fmt="s", mec="k", capsize=0, lw=0.2,
-                        label= "Loubser et al. 2012", alpha=1, ms=7)
-            # ax.errorbar(rbins, data_r[:,j], yerr = errs_r[:,j], fmt="s",
-            #         color="r", ecolor="k", capsize=0, mec="k", ms=7,
-            #         zorder=100, label=labels[2], markerfacecolor="none", mew=2)
+                        label= "Loubser et al. 2012", alpha=1, ms=7.5, mew=0.5)
             ax.errorbar(lodo[:,0], lodo[:,j+1],
                          yerr = lodoerr[:,j+1],
-                         fmt="^", c="y", capsize=0, mec="k", ecolor="0.5",
-                         label=labels[1], ms=7., alpha=1, lw=0.5)
+                         fmt="^", c="orange", capsize=0, mec="k", ecolor="0.5",
+                         label=labels[1], ms=8., alpha=1, lw=0.5, mew=0.5)
             ax.errorbar(dwarf[0],
-                        dwarf[j+1], yerr=dwarferr[j+1], fmt="^", c="y",
-                        capsize=0, mec="k", ecolor="0.5", ms=7., lw=0.5)
+                        dwarf[j+1], yerr=dwarferr[j+1], fmt="^", c="orange",
+                        capsize=0, mec="k", ecolor="0.5", ms=8., lw=0.5, mew=0.5)
             plt.minorticks_on()
             if j+1 != len(lick):
                 ax.xaxis.set_ticklabels([])
@@ -283,8 +280,8 @@ if __name__ == "__main__":
                                 scatterpoints = 1, frameon=False)
             add = 0 if j != 0 else 2
             sigma_mad = 1.48 * np.median(np.abs(ydata - np.median(ydata)))
-            ym = np.ceil(np.median(ydata)-8 * sigma_mad)
-            yp = np.floor(np.median(ydata)+8*sigma_mad+add)
+            ym = np.ceil(np.median(ydata)-4 * sigma_mad)
+            yp = np.floor(np.median(ydata)+4*sigma_mad+add)
             ylim = plt.ylim(ym, yp)
             ##################################################################
             # Measuring gradients
@@ -301,6 +298,7 @@ if __name__ == "__main__":
             y = line(x, popt[0], popt[1])
             lll, = ax.plot(x, y, "--k", lw=2, zorder=10000)
             lll.set_dashes([10, 3])
+            # Including shades for +- 1%'
             ##################################################################
             # Halo
             values = lickhalo[j]
@@ -310,7 +308,7 @@ if __name__ == "__main__":
             mask = ~np.isnan(values)
             l = lickhalo[j][mask]
             lerr = errs_halo[j][mask]
-            popth, pcovh = curve_fit(line, rhalo[mask], l, sigma=lerr)
+            popth, pcovh = curve_fit(line, rhalo[mask], l)
             pcovh = np.sqrt(np.diagonal(pcovh))
             x = np.linspace(r_tran, 0.7, 100)
             if not log:
@@ -321,11 +319,14 @@ if __name__ == "__main__":
             #################################################################
             # Ploting rms 1%
             rms = np.loadtxt(os.path.join(tables_dir,
-                                    "rms_1pc_lick_{0}.txt".format(j)))
-            xrms, yrms = rms[rms[:,0]<=r_tran].T
+                                    "rms_1pc_lick_{0}.txt".format(j)),
+                             usecols=(0,2))
+            xrms, yrms = rms[rms[:,0] < r_tran].T
+            # ax.plot(xrms, yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
+            # ax.plot(xrms, -yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
             ax.fill_between(xrms, yrms + line(xrms, popt[0], popt[1]),
                             line(xrms, popt[0], popt[1]) - yrms,
-                            edgecolor="none", color="y",
+                            edgecolor="none", color="0.3",
                             linewidth=0, alpha=0.5)
             ##################################################################
             # Outer halo in bins
@@ -340,11 +341,14 @@ if __name__ == "__main__":
             ##################################################################
             # Ploting rms 1%
             rms = np.loadtxt(os.path.join(tables_dir,
-                                    "rms_1pc_lick_{0}.txt".format(j)))
+                                    "rms_1pc_lick_{0}.txt".format(j)),
+                             usecols=(0,2))
             xrms, yrms = rms[rms[:,0]>=r_tran].T
+            # ax.plot(xrms, yrms + line(xrms, popth[0], popth[1]), "-", c="0.5")
+            # ax.plot(xrms, -yrms + line(xrms, popth[0], popth[1]), "-", c="0.5")
             ax.fill_between(xrms, yrms + line(xrms, popth[0], popth[1]),
                             line(xrms, popth[0], popth[1]) - yrms,
-                            edgecolor="none", color="y",
+                            edgecolor="none", color="0.5",
                             linewidth=0, alpha=0.5)
             ##################################################################
             # Draw arrows to indicate central limits
@@ -367,6 +371,7 @@ if __name__ == "__main__":
                     bbox_inches="tight", transparent=False)
         for t in tex:
             print t
+    # plt.show(block=1)
     # Making plots of Hbeta, Mgb, <Fe> and [MgFe]'
     # r, pa, sn = np.loadtxt(results_masked, usecols=(3,4,14)).T
     # # r /= re
