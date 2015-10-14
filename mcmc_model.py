@@ -11,20 +11,25 @@ import shutil
 
 import numpy as np
 from scipy import stats
-from scipy.interpolate import LinearNDInterpolator as interpolator
+from scipy.interpolate import NearestNDInterpolator, LinearNDInterpolator
 import pymc
 
 from config import *
 
 class SSP:
     """ Wrapper for the interpolated model."""
-    def __init__(self, model_table, indices=np.arange(25)): 
+    def __init__(self, model_table, indices=np.arange(25), itype="nearest"):
+        self.itype = itype
+        if self.itype == "nearest":
+            self.interpolator = NearestNDInterpolator
+        elif self.itype == "linear":
+            self.interpolator = LinearNDInterpolator
         self.interpolate(model_table)
         self.indices = indices 
     
     def interpolate(self, model_table):
         modeldata = np.loadtxt(model_table, dtype=np.double)
-        self.model = interpolator(modeldata[:,:3], modeldata[:,3:])
+        self.model = self.interpolator(modeldata[:,:3], modeldata[:,3:])
         
     def fn(self, age, metallicity, alpha): 
         return self.model(age, metallicity, alpha)[self.indices]
@@ -77,13 +82,14 @@ def get_model_lims():
 if __name__ == "__main__":
     lims = [[0., 15.], [-2.25, 0.67], [-0.3, 0.5]]
     model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
+    model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
     age_dist = pymc.Uniform(name="age_dist", lower=1., upper=14.5)
     metal_dist = pymc.Uniform(name="metal_dist", lower=-2.25, upper=0.67)
     alpha_dist = pymc.Uniform(name="alpha_dist", lower=-0.3, upper=0.5)
-    working_dir = os.path.join(home, "p6pc")
+    working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
     spectra, data, errs = read_data("lick_corr.tsv",
-                                    "mc_lick_nsim100.txt")
+                                    "mc_lick_nsim400.txt")
     lims = get_model_lims()
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):
@@ -115,12 +121,19 @@ if __name__ == "__main__":
         indcols = indcols[indcols>11] 
         obsdata = obsdata[indcols]
         obserr = obserr[indcols]
-        taus = 1 / obserr**2
-        ssp = SSP(model_table, indcols)
+        # taus = 1 / obserr**2
+        ssperr = SSP(model_table_err, indcols, itype="nearest")
+        ssp = SSP(model_table, indcols, itype="linear")
+
         @pymc.deterministic()
         def ssp1(age=age_dist, metal=metal_dist, alpha=alpha_dist):
             return ssp(age, metal, alpha)
-        y = pymc.Normal(name="y", mu=ssp1, tau=taus,
+
+        @pymc.deterministic()
+        def ssp1err(age=age_dist, metal=metal_dist, alpha=alpha_dist):
+            return 1 / (obserr**2 + ssperr(age, metal, alpha))
+
+        y = pymc.Normal(name="y", mu=ssp1, tau=ssp1err,
                         value=obsdata, observed=True)
 
         model = pymc.Model([y, age_dist, metal_dist, alpha_dist]) 
