@@ -12,7 +12,7 @@ import shutil
 from config import *
 
 if __name__ == "__main__":
-    os.chdir(os.path.join(home, "m1pc"))
+    os.chdir(os.path.join(home, "single2"))
     folders = [x for x in os.listdir(".") if os.path.isdir(x)]
     for folder in folders:
         if folder in ["figs", "logs", "mc_logs"]:

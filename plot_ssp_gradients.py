@@ -263,12 +263,10 @@ if __name__ == "__main__":
                     round(popt1[0],2), round(pcov1[0],2)),
                      xy=(0.06,0.35), xycoords="axes fraction", color="k",
                      fontsize=12)
-        # ax.plot(x, yy + rms1(x), "-y")
-        # ax.plot(x, yy - rms1(x), "-y")
-        # ax.plot(x, yy + rms3(x), "-y")
-        # ax.plot(x, yy - rms3(x), "-y")
         ax.fill_between(x, yy - rms1(x), yy + rms1(x), edgecolor="none",
-                        color="0.5", linewidth=0, alpha=0.3)
+                        color="0.1", linewidth=0, alpha=0.5)
+        # ax.fill_between(x, yy - rms3(x), yy + rms3(x), edgecolor="none",
+        #                 color="0.0.8", linewidth=0, alpha=0.5)
         ######################################################################
         # Outer halo
         mask = ~np.isnan(yc2)
@@ -285,12 +283,10 @@ if __name__ == "__main__":
         lll, = ax.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
                        label=label)
         lll.set_dashes([10, 3])
-        # ax.plot(x, yy + rms1(x), "-y")
-        # ax.plot(x, yy - rms1(x), "-y")
-        # ax.plot(x, yy + rms3(x), "-y")
-        # ax.plot(x, yy - rms3(x), "-y")
         ax.fill_between(x, yy - rms1(x), yy + rms1(x), edgecolor="none",
-                        color="0.5", linewidth=0, alpha=0.3)
+                        color="0.5", linewidth=0, alpha=0.5)
+        # ax.fill_between(x, yy - rms3(x), yy + rms3(x), edgecolor="none",
+        #                 color="0.0.8", linewidth=0, alpha=0.5)
         #####################################################################
         ax.legend(loc=3, fontsize=12, frameon=0, handlelength=2.5)
         #######################################################################
@@ -335,10 +331,6 @@ if __name__ == "__main__":
         lll, = ax2.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
                        label=label)
         lll.set_dashes([10, 3])
-        # ax2.plot(x, yy + rms2(x), "-y")
-        # ax2.plot(x, yy - rms2(x), "-y")
-        # ax2.plot(x, yy + rms4(x), "-y")
-        # ax2.plot(x, yy - rms4(x), "-y")
         ax2.fill_between(x, yy - rms2(x), yy + rms2(x), edgecolor="none",
                         color="0.5", linewidth=0, alpha=0.3)
         #####################################################################

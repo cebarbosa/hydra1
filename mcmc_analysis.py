@@ -72,6 +72,7 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
+    # specs = ["fin1_n3311cen1_s21.fits"]
     dirs = [x.replace(".fits", "_db") for x in specs]
     lims = [[np.log10(1.), np.log10(15.)], [-2.25, 0.67], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
@@ -160,7 +161,7 @@ if __name__ == "__main__":
                          ha="center", size=20)
             line += "{0[1]:.5f}"
         plt.tight_layout(pad=0.2)
-        # plt.pause(0.001)
+        plt.pause(0.001)
         # plt.show(block=True)
         pp.savefig()
         plt.savefig(os.path.join(working_dir,

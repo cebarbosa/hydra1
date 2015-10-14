@@ -84,18 +84,23 @@ if __name__ == "__main__":
         idx_sorted = x.argsort()
         y = diff[idx_sorted]
         x = x[idx_sorted]
-        xw = rolling_median(x, window=50, min_periods=1)
-        yw = rolling_apply(y, 50, mad, min_periods=1)
+        mad_std = mad(y)
+        median = np.median(y)
+        x = x[(y < median + 5 * mad_std) & (y > median - 5 * mad_std)]
+        y = y[(y < median + 5 * mad_std) & (y > median - 5 * mad_std)]
+        xw = rolling_median(x, window=40, min_periods=1)
+        yw2 = rolling_apply(y, 40, mad, min_periods=1)
+        yw = rolling_std(y, 40, min_periods=1)
         xw = np.hstack((xw, x.max()))
         yw = np.hstack((yw, yw[-1]))
         ax = plt.subplot(gs[i])
         ax.minorticks_on()
-        ax.plot(data[0][idxp], diffp, "ob", mec="none", alpha=0.8,
+        ax.plot(data[0][idxp], diffp, "ob", mec="none", alpha=0.5,
                 label=r"+1\%")
-        ax.plot(data[0][idxm], diffm, "or", mec="none", alpha=0.8,
+        ax.plot(data[0][idxm], diffm, "or", mec="none", alpha=0.5,
                 label=r"-1\%")
         ax.axhline(y=0, ls="--", c="k")
-        ax.fill_between(xw, yw, -yw, edgecolor="none", color="y",
+        ax.fill_between(xw, yw, -yw, edgecolor="none", color="0.5",
                         linewidth=0, alpha=0.5)
         if i != 6:
             ax.xaxis.set_ticklabels([])
@@ -104,9 +109,9 @@ if __name__ == "__main__":
         plt.ylabel(r"$\delta$ {0}".format(pars[i]), size=10)
         if i == 0:
             plt.legend(loc=0, ncol=2, prop={'size':10})
-        ax.set_ylim(-2 * yw.max(), 2 * yw.max())
-        # np.savetxt(os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i)),
-        #            np.column_stack((r, sb, rms)))
+        ax.set_ylim(-2 * yw2.max(), 2 * yw2.max())
+        np.savetxt(os.path.join(tables_dir, "rms_6pc_lick_{0}.txt".format(i)),
+                   np.column_stack((xw, yw)))
     # plt.pause(0.001)
     plt.savefig(os.path.join(figures_dir, "sky_pm_6pc_lick.png"))
     plt.show(block=False)
