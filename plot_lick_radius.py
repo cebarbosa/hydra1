@@ -78,6 +78,7 @@ if __name__ == "__main__":
     ssp = Ssp(model_table)
     restrict_pa = 0
     log = True
+    pc = 6
     r_tran = np.log10( 8.4 / re)
     plt.ioff()
     model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
@@ -318,16 +319,17 @@ if __name__ == "__main__":
             lll.set_dashes([10, 3])
             #################################################################
             # Ploting rms 1%
-            rms = np.loadtxt(os.path.join(tables_dir,
-                                    "rms_1pc_lick_{0}.txt".format(j)),
-                             usecols=(0,2))
-            xrms, yrms = rms[rms[:,0] < r_tran].T
-            # ax.plot(xrms, yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
-            # ax.plot(xrms, -yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
-            ax.fill_between(xrms, yrms + line(xrms, popt[0], popt[1]),
-                            line(xrms, popt[0], popt[1]) - yrms,
-                            edgecolor="none", color="0.3",
-                            linewidth=0, alpha=0.5)
+            for p, c in [[1,"0.3"], [6, "0.1"]]:
+                rms = np.loadtxt(os.path.join(tables_dir,
+                                        "rms_{1}pc_lick_{0}.txt".format(j, p)),
+                                 usecols=(0,1))
+                xrms, yrms = rms[rms[:,0] < r_tran].T
+                # ax.plot(xrms, yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
+                # ax.plot(xrms, -yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
+                ax.fill_between(xrms, yrms + line(xrms, popt[0], popt[1]),
+                                line(xrms, popt[0], popt[1]) - yrms,
+                                edgecolor="none", color=c,
+                                linewidth=0, alpha=0.1)
             ##################################################################
             # Outer halo in bins
             # popt2, pcov2 = curve_fit(line, rbins, data_r[:,j], sigma=errs_r[:,j])
@@ -340,16 +342,15 @@ if __name__ == "__main__":
             # ax.axvline(x=r_tran, c="k", ls="-.")
             ##################################################################
             # Ploting rms 1%
-            rms = np.loadtxt(os.path.join(tables_dir,
-                                    "rms_1pc_lick_{0}.txt".format(j)),
-                             usecols=(0,2))
-            xrms, yrms = rms[rms[:,0]>=r_tran].T
-            # ax.plot(xrms, yrms + line(xrms, popth[0], popth[1]), "-", c="0.5")
-            # ax.plot(xrms, -yrms + line(xrms, popth[0], popth[1]), "-", c="0.5")
-            ax.fill_between(xrms, yrms + line(xrms, popth[0], popth[1]),
-                            line(xrms, popth[0], popth[1]) - yrms,
-                            edgecolor="none", color="0.5",
-                            linewidth=0, alpha=0.5)
+            for p, c in [[1,"0.1"], [6, "0.8"]]:
+                rms = np.loadtxt(os.path.join(tables_dir,
+                                        "rms_{1}pc_lick_{0}.txt".format(j, p)),
+                                 usecols=(0,1))
+                xrms, yrms = rms[rms[:,0]>=r_tran].T
+                ax.fill_between(xrms, yrms + line(xrms, popth[0], popth[1]),
+                                line(xrms, popth[0], popth[1]) - yrms,
+                                edgecolor="none", color=c,
+                                linewidth=0, alpha=0.5)
             ##################################################################
             # Draw arrows to indicate central limits
             ax.annotate("", xy=(-1.12, loubser[j]), xycoords='data',
@@ -367,7 +368,7 @@ if __name__ == "__main__":
                 print np.abs(popt[1] - popth[1]) < m * (pcov[1]+pcovh[1]),
             print
         print "Saving new figure..."
-        plt.savefig("figs/lick_radius.png", dpi=100,
+        plt.savefig("figs/lick_radius_{0}pc.png".format(pc), dpi=100,
                     bbox_inches="tight", transparent=False)
         for t in tex:
             print t
