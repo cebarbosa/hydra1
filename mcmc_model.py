@@ -80,7 +80,7 @@ def get_model_lims():
 
 
 if __name__ == "__main__":
-    lims = [[0., 15.], [-2.25, 0.67], [-0.3, 0.5]]
+    lims = [[0.1, 15.], [-2.25, 0.67], [-0.3, 0.5]]
     model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
     model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
     age_dist = pymc.Uniform(name="age_dist", lower=1., upper=14.5)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         dbfolder = os.path.join(working_dir, dbname)
         if os.path.exists(dbfolder):
             continue
-        print "({0} / {1})".format(i+1, len(spectra))
+        print "Working with spectra {2} ({0} / {1})".format(i+1, len(spectra), spec)
         if i == 0:
             with open(outtable, "w") as f:
                 f.write("# Spectra\tAge(Gyr)\tAge-\tAge+\t[Z/H]\t[Z/H]"
