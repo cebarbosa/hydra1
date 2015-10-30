@@ -164,7 +164,8 @@ def merge_tables():
     ##########################################################################
     # Loading files
     data2 = np.loadtxt(files[1], usecols=np.arange(1,26))
-    data3 = np.loadtxt(files[2], usecols=np.arange(1,10))
+    data3 = np.loadtxt(files[2], usecols=(1,2,3,5,6,7,9,10,11))
+    data31 = np.loadtxt(files[2], usecols=(4,8,12))
     data4 = np.loadtxt(files[3], usecols=np.arange(1,26))
     data5 = np.loadtxt(files[4], usecols=(1,))
     data6 = np.loadtxt(files[5], usecols=(1,))
@@ -173,6 +174,7 @@ def merge_tables():
     data1 = match_data(s1, sref, data1)
     data2 = match_data(s2, sref, data2)
     data3 = match_data(s3, sref, data3)
+    data31 = match_data(s3, sref, data31)
     data4 = match_data(s4, sref, data4)
     data5 = match_data(s5, sref, data5)
     data6 = match_data(s6, sref, data6)
@@ -206,11 +208,13 @@ def merge_tables():
     feh[:,0] = data3[:,3] - 0.94 * data3[:,6]
     feh[:,1] = data3[:,4] -0.94 * data3[:,8]
     feh[:,2] = data3[:,5] - 0.94 * data3[:,7]
+    ad_Fe = np.maximum(data31[:,1], data31[:,2])
     ##########################################################################
     # Saving results
     results = np.column_stack((sref, x, y, r, pa, data1, data24, meanfe, 
               meanfeerr, mgfeprime, mgfeprimeerr, data3, coords, 
-              mgb_meanfe, mgb_meanfe_err, data5, data6, feh))
+              mgb_meanfe, mgb_meanfe_err, data5, data6, feh, data31,
+              ad_Fe))
     header = ['FILE', "X[kpc]", "Y[kpc]", "R[kpc]", "PA", 'V', 'dV', 'S', 'dS',
               'h3', 'dh3', 'h4', 'dh4',  'chi/DOF', 'S/N', 'Hd_A', 'dHd_A',
               'Hd_F', 'dHd_F', 'CN_1', 'dCN_1', 'CN_2', 'dCN_2', 'Ca4227',
@@ -226,7 +230,11 @@ def merge_tables():
               "DEC", "Mg b / <Fe>", "d Mg b / <Fe>",
               "V-band surface brightness (mag arcsec-2)",
               "Residual V-band surface brightness (mag arcsec-2)",
-              "[Fe / H]", "[Fe / H] lower limit", "[Fe / H] upper limit"]
+              "[Fe / H]", "[Fe / H] lower limit", "[Fe / H] upper limit",
+              "Anderson-Darling test for Age",
+              "Anderson-Darling test for [Z/H]",
+              "Anderson-Darling test for [alpha/Fe]",
+              "Anderson-Darling maximum between [Z/H] and [alpha/Fe] for [Fe/H]"]
     with open(outtable, "w") as f:
         for i,field in enumerate(header):
             print "# {0} : {1}\n".format(i, field)
@@ -1335,7 +1343,7 @@ def make_ssp(loess=False):
     # Read data values for Lick indices
     data = np.loadtxt(outtable, usecols=(69,72,75,84)).T
     # Changing units of age for log scale
-    data[0] += 9.
+    # data[0] += 9.
     # Read spectra name
     s = np.genfromtxt(outtable, usecols=(0,), dtype=None).tolist()
     ########################################################
@@ -1371,12 +1379,11 @@ def make_ssp(loess=False):
     # Loop for figures
     for i, vector in enumerate(data):
         print "Producing figure for {0}...".format(titles[i])
-        good = np.where(((~np.isnan(vector)) & (sn>sn_cut)))[0]
+        good = np.where(((np.isfinite(vector)) & (sn>sn_cut)))[0]
         v = vector[good]
         robust_sigma =  1.4826 * np.median(np.abs(v - np.median(v)))
         vmin = np.median(v)  - 0.8 * robust_sigma
         vmax = np.median(v) + 0.8 * robust_sigma
-
         vmin = lims[i][0] if lims[i][0] else vmin
         vmax = lims[i][1] if lims[i][1] else vmax
         if i == 0:
@@ -1482,7 +1489,7 @@ if __name__ == "__main__":
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
-    # make_kin_summary(loess=0)
+    # make_kin_summary(loess=1)
     ####################################################
     # Produce maps for Lick indices
     # make_lick2(loess=False, rlims=40)
