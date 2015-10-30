@@ -57,8 +57,7 @@ class CanvasImage():
         # For some reason pywcs is not making things right here for vband image
         if self.imtype in ["vband", "residual"]:
             ra, dec = [[159.2268, 159.0858], [-27.5978, -27.4792]]
-        else:
-            ox=0.005
+        if self.imtype in ["xrays"]:
             ra, dec = np.array([[159.6196417, 158.8087792],
                                 [-27.9140444, -27.19518333]])
             ra += -0.002
@@ -211,6 +210,10 @@ class CanvasImage():
         elif self.imtype == "xrays":
             self.image = os.path.join(images_dir,  "xray.fits")
             self.ps = 4.1
+            self.posangle = 0.
+        elif self.imtype == "galexuv":
+            self.image = os.path.join(images_dir,  "AIS_329_sg12-fd-int.fits")
+            self.ps = 1
             self.posangle = 0.
         return 
             
