@@ -26,6 +26,8 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
     """ Run pPXF in a list of spectra"""
     if isinstance(spectra, str):
         spectra = [spectra]
+    if isinstance(pkls, str):
+        pkls = [pkls]
     if pkls == None:
         pkls = [x.replace(".fits", ".pkl") for x in spectra]
     ##########################################################################
