@@ -84,12 +84,9 @@ if __name__ == "__main__":
     ##########################################################################
     # Read SSP parameters and convert errors for plot
     data = np.loadtxt(table, usecols=(69, 72, 75, 84)).T
-    data[0] += 9.
     x, y, sn = np.loadtxt(table, usecols=(1,2,14)).T
     errs1 = np.loadtxt(table, usecols=(70,73,76,85)).T
     errs2 = np.loadtxt(table, usecols=(71,74,77,86)).T
-    errs1[0] += 9.
-    errs2[0] += 9
     for i in range(4):
         errs1[i] = data[i] - errs1[i]
         errs2[i] = errs2[i] - data[i]
@@ -122,11 +119,16 @@ if __name__ == "__main__":
     norm = Normalize(vmin=0, vmax=30)
     for i, (y, y1, y2) in enumerate(zip(data, errs1, errs2)):
         ######################################################################
+        ii = np.logical_and(np.logical_and(np.isfinite(y), np.isfinite(y1)),
+                            np.isfinite(y2))
+        y = y[ii]
+        y1 = y1[ii]
+        y2 = y2[ii]
         # Combined array ours + Loubser+ 2012
-        rc = np.hstack((r, r_l12))
+        rc = np.hstack((r[ii], r_l12))
         rc1 = rc[rc <= r_tran]
         rc2 = rc[rc > r_tran]
-        sbc = np.hstack((mu, l12_sb))
+        sbc = np.hstack((mu[ii], l12_sb))
         sbc1 = sbc[rc <= r_tran]
         sbc2 = sbc[rc > r_tran]
         yc = np.hstack((y, l12[i]))
@@ -141,6 +143,8 @@ if __name__ == "__main__":
         yc2 = yc[rc > r_tran]
         yc1err = ycerr[rc <= r_tran]
         yc2err = ycerr[rc > r_tran]
+        # print pars[i], yc1.mean(), np.median(yc1), np.std(yc1)
+        print pars[i], yc2.mean(), np.median(yc2), np.std(yc2)
         ######################################################################
         # Clip values according to the models
         # for z, zerr in [[yc1, yc1err], [yc2, yc2err]]:
@@ -185,9 +189,9 @@ if __name__ == "__main__":
         ax2.minorticks_on()
         ii1 = np.where(sn >= 20.)[0]
         ii2 =  np.where(sn < 20.)[0]
-        ax.errorbar(r, y, yerr = [y1, y2], fmt=None,
+        ax.errorbar(r[ii], y, yerr = [y1, y2], fmt=None,
                     color=lgray, ecolor=lgray, capsize=0., zorder=1)
-        ax.scatter(r, y, c=sn, s=50, cmap=cmap, zorder=2,
+        ax.scatter(r[ii], y, c=sn[ii], s=50, cmap=cmap, zorder=2,
                    lw=0.5, norm=norm)
         ######################################################################
         # Plot data for Loubser 2012
@@ -209,9 +213,9 @@ if __name__ == "__main__":
         #####################################################################
         # Second plot: data as function of surface brightness
         #####################################################################
-        ax2.errorbar(mu, y, yerr = [y1, y2], fmt=None,
+        ax2.errorbar(mu[ii], y, yerr = [y1, y2], fmt=None,
                     color=lgray, ecolor=lgray, capsize=0., zorder=1)
-        ax2.scatter(mu, y, c=sn, s=50, cmap=cmap, zorder=2,
+        ax2.scatter(mu[ii], y, c=sn[ii], s=50, cmap=cmap, zorder=2,
                    lw=0.5, norm=norm)
         ax2.set_xlim(19,25)
         ######################################################################
@@ -414,4 +418,4 @@ if __name__ == "__main__":
     #                                          "Out offset", "Out Grad"))
     #     f.write("\n".join(grad_tab2))
     # ##########################################################################
-    plt.show(block=True)
+    # plt.show(block=True)
