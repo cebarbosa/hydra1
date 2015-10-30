@@ -27,16 +27,15 @@ class Dist():
         self.data = data
         self.lims = lims
         self.bw = bw
-        self.kernel = stats.gaussian_kde(self.data, bw_method=self.bw)
-        self.skew, self.pvalue = stats.skewtest(self.data)
-        self.param = stats.genextreme.fit(self.data)
-        self.dist = stats.genextreme
-        self.pdf = lambda x : self.dist.pdf(x,
-                            *self.param[:-2], loc=self.param[-2],
-                                    scale=self.param[-1])
-        self.MAPP = fmin(lambda x: -self.pdf(x),
+        self.genextreme = genextreme(self.data)
+        self.norm = statdist(self.data, stats.norm)
+        self.truncnorm = statdist(self.data, stats.truncnorm)
+        dists = [self.genextreme, self.norm, self.truncnorm]
+        idx = np.argmin([x.ad for x in dists])
+        self.dist = dists[idx]
+        self.MAPP = fmin(lambda x: -self.dist.pdf(x),
                          0.5 * (self.data.min() + self.data.max()), disp=0)[0]
-        # Calculate percentiles
+        # # Calculate percentiles
         self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
         self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
         self.percentilemin = np.maximum(self.percentileatmapp - 34., 0.)
@@ -46,35 +45,75 @@ class Dist():
         self.uerr = np.sqrt(self.bw**2 + np.abs(self.MAPP - self.MAPPmax)**2)
         return
 
+class genextreme():
+    def __init__(self, data):
+        self.dist = stats.genextreme
+        self.data = data
+        self.p = self.dist.fit(self.data)
+        self.pdf = lambda x : stats.genextreme.pdf(x, *self.p[:-2],
+                    loc=self.p[-2], scale=self.p[-1])
+        self.sample = stats.genextreme.rvs(self.p[0], size=len(self.data),
+                                           loc=self.p[-2], scale=self.p[-1])
+        try:
+            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        except:
+            self.ad = np.infty
 
-def hist2D(dist1, dist2):
+class statdist():
+    def __init__(self, data, dist):
+        self.dist = dist
+        self.data = data
+        self.p = self.dist.fit(self.data)
+        self.pdf = lambda x : self.dist.pdf(x, *self.p[:-2], loc=self.p[-2],
+                                            scale=self.p[-1])
+        self.sample = stats.norm.rvs(self.p[0], size=len(self.data),
+                                           scale=self.p[-1])
+        try:
+            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        except:
+            self.ad = np.infty
+
+def hist2D(dist1, dist2, ax):
     """ Plot distribution and confidence contours. """
     X, Y = np.mgrid[dist1.lims[0] : dist1.lims[1] : 20j, 
                     dist2.lims[0] : dist2.lims[1] : 20j]
     extent = [dist1.lims[0], dist1.lims[1], dist2.lims[0], dist2.lims[1]]
     positions = np.vstack([X.ravel(), Y.ravel()])    
-    values = np.vstack([dist1.data, dist2.data]) 
+    values = np.vstack([dist1.data, dist2.data])
     kernel = stats.gaussian_kde(values)
-    Z = np.reshape(kernel(positions).T, X.shape)    
-    ax.imshow(np.rot90(Z), cmap="gray_r", extent= extent, aspect="auto")
-    pers = []
-    for per in np.array([32, 5, 0.3]):
-        pers.append(stats.scoreatpercentile(kernel(kernel.resample(1000)), 
-                                            per))
-    plt.contour(Z.T, np.array(pers), colors="k", extent=extent)
+    Z = np.reshape(kernel(positions).T, X.shape)
+    ax.imshow(np.rot90(Z), cmap="gray_r", extent=extent, aspect="auto",
+              interpolation="spline16")
+    # plt.hist2d(dist1.data, dist2.data, bins=40, cmap="gray_r")
     plt.axvline(dist1.MAPP, c="r", ls="--")
     plt.axhline(dist2.MAPP, c="r", ls="--")
-    plt.minorticks_on()
+    ax.minorticks_on()
     return
 
+def summary_table(specs):
+    """ Make final table."""
+    lines = []
+    for spec in specs:
+        folder = spec.replace(".fits", "_db")
+        logfile = os.path.join(working_dir, folder, "summary.txt")
+        if not os.path.exists(logfile):
+            continue
+        with open(logfile, "r") as f:
+            header = f.readline()
+            lines.append(f.readline())
+    table = os.path.join(working_dir, "populations.txt")
+    with open(table, "w") as f:
+        f.write(header)
+        f.write("\n".join(lines))
+
 if __name__ == "__main__":
-    working_dir = os.path.join(home, "p6pc")
+    working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
-    # specs = ["fin1_n3311cen1_s21.fits"]
+    specs = ["fin1_n3311out2_s36.fits"]
     dirs = [x.replace(".fits", "_db") for x in specs]
-    lims = [[np.log10(1.), np.log10(15.)], [-2.25, 0.67], [-0.3, 0.5]]
+    lims = [[9 + np.log10(1.), 9 + np.log10(15.)], [-2.25, 0.67], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
     fignums = [4, 7, 8]
     pairs = [[0,1], [0,2], [1,2]]
@@ -83,6 +122,7 @@ if __name__ == "__main__":
     plt.figure(1, figsize=(9,6.5))
     plt.minorticks_on()
     table_summary, table_results = [], []
+    sndata = dict(np.loadtxt("ppxf_results.dat", usecols=(0,10), dtype=str))
     for spec in specs:
         print spec
         folder = spec.replace(".fits", "_db")
@@ -92,20 +132,21 @@ if __name__ == "__main__":
         name = spec.replace(".fits", '').replace("n3311", "").split("_")
         name = name[1] + name[2]
         name = r"{0}".format(name)
+        sn = float(sndata[spec])
         ages_data = np.loadtxt("Chain_0/age_dist.txt")
-        ages_data = np.log10(ages_data)
-        ages = Dist(ages_data, [np.log10(1),np.log10(15)])
+        ages_data = 9. + np.log10(ages_data)
+        ages = Dist(ages_data, [9 + np.log10(1), 9 + np.log10(15)])
         metal_data = np.loadtxt("Chain_0/metal_dist.txt")
         metal = Dist(metal_data, [-2.25, 0.67])
         alpha_data = np.loadtxt("Chain_0/alpha_dist.txt")
         alpha = Dist(alpha_data, [-0.3, 0.5])
-        weights = np.ones_like(ages.data)/len(ages.data)
         dists = [ages, metal, alpha]
-        table1, table2, summary = [], [], []
+        log, summary = [r"{0:28s}".format(spec)], []
         for i, d in enumerate(dists):
+            weights = np.ones_like(d.data)/len(d.data)
             ax = plt.subplot(3,3,(4*i)+1)
             N, bins, patches = plt.hist(d.data, color="w", weights=weights,
-                                        ec="w", bins=35, range=tuple(lims[i]),
+                                        ec="w", bins=30, range=tuple(lims[i]),
                                         normed=True)
             fracs = N.astype(float)/N.max()
             norm = Normalize(-.2* fracs.max(), 1.5 * fracs.max())
@@ -113,9 +154,11 @@ if __name__ == "__main__":
                 color = cm.gray_r(norm(thisfrac))
                 thispatch.set_facecolor(color)
             x = np.linspace(d.data.min(), d.data.max(), 100)
-            pdf_fitted = d.dist.pdf(x, *d.param[:-2], loc=d.param[-2],
-                                    scale=d.param[-1])
-            plt.plot(x, pdf_fitted, "-r")
+            ylim = ax.get_ylim()
+            plt.plot(x, d.dist.pdf(x), "-r", label="AD = {0:.1f}".format(
+                d.dist.ad))
+            ax.set_ylim(ylim)
+            plt.legend(loc=2, prop={'size':8})
             plt.axvline(d.MAPP, c="r", ls="--")
             plt.tick_params(labelright=True, labelleft=False)
             plt.xlim(d.lims)
@@ -125,32 +168,29 @@ if __name__ == "__main__":
                 plt.xlabel(r"[$\mathregular{\alpha}$ / Fe]")
             plt.minorticks_on()
             summary.append([d.MAPP, d.uerr, d.lerr])
-            table1.append(r"{0:.5f}".format(d.MAPP))
-            table1.append(r"{0:.5f}".format(d.MAPPmin))
-            table1.append(r"{0:.5f}".format(d.MAPPmax))
-            table2.append(r"{0:.5f}".format(d.MAPP))
-            table2.append(r"{0:.5f}".format(d.lerr))
-            table2.append(r"{0:.5f}".format(d.uerr))
-        table1 = [r"{0:28s}".format(spec)] + [r"{0:10s}".format(x) for x in
-                                              table1]
-        table_results.append("".join(table1))
-        table2 = [r"{0:28s}".format(spec)] + [r"{0:10s}".format(x) for x in
-                                              table2]
-        table_summary.append("".join(table2))
+            for ss in [d.MAPP, d.MAPPmin, d.MAPPmax, d.dist.ad]:
+                log.append(r"{0:10s}".format(r"{0:.5f}".format(ss)))
+        logfile = os.path.join(working_dir, folder, "summary.txt")
+        with open(logfile, "w") as f:
+            f.write("{0:28s}{1:10s}{2:10s}{3:10s}{6:10s}{4:10s}{2:10s}{3:10s}{6:10s}{5:10s}"
+                "{2:10s}{3:10s}{6:10s}\n".format("#Spectra", "Log AGE", "LOWER",
+                "UPPER", "[Z/H]", "[E/Fe]", "AD test"))
+            f.write("".join(log))
         ax = plt.subplot(3,3,4)
-        hist2D(ages, metal)
+        hist2D(ages, metal, ax)
         plt.setp(ax.get_xticklabels(), visible=False)
-        plt.ylabel("[Z/Fe]")
+        plt.ylabel("[Z/H]")
         
         ax = plt.subplot(3,3,7)
-        hist2D(ages, alpha) 
+        hist2D(ages, alpha, ax)
         plt.ylabel(r"[$\mathregular{\alpha}$ / Fe]")
         plt.xlabel("log Age (Gyr)")
         ax = plt.subplot(3,3,8)
-        plt.xlabel("[Z/Fe]")
-        hist2D(metal, alpha)
+        plt.xlabel("[Z/H]")
+        hist2D(metal, alpha, ax)
         # Annotations
-        plt.annotate(r"Spectrum: {0}".format(name.upper()), xy=(.7,.91),
+        plt.annotate(r"Spectrum: {0}    S/N={1:.1f}".format(name.upper(), sn),
+                     xy=(.7,.91),
                      xycoords="figure fraction", ha="center", size=20)
         xys = [(.7,.84), (.7,.77), (.7,.70)]
         line = r"{0:28s}".format(spec)
@@ -161,22 +201,14 @@ if __name__ == "__main__":
                          ha="center", size=20)
             line += "{0[1]:.5f}"
         plt.tight_layout(pad=0.2)
-        plt.pause(0.001)
+        # plt.pause(0.001)
         # plt.show(block=True)
         pp.savefig()
         plt.savefig(os.path.join(working_dir,
                     "logs/mcmc_{0}.png".format(name)), dpi=100)
         plt.clf()
     pp.close()
-    with open(os.path.join(working_dir, "populations_summary.txt"), "w") as f:
-        f.write("{0:28s}{1:10s}{2:10s}{3:10s}{4:10s}{2:10s}{3:10s}{5:10s}"
-                "{2:10s}{3:10s}\n".format("#Spectra", "Log AGE", "LERR", "UERR",
-                                        "[Z/H]", "[E/Fe]"))
-        f.write("\n".join(table_summary))
-    with open(os.path.join(working_dir, "populations.txt"), "w") as f:
-        f.write("{0:28s}{1:10s}{2:10s}{3:10s}{4:10s}{2:10s}{3:10s}{5:10s}"
-                "{2:10s}{3:10s}\n".format("#Spectra", "Log AGE", "LOWER",
-                "UPPER", "[Z/H]", "[E/Fe]"))
-        f.write("\n".join(table_results))
+    summary_table(speclist())
+
         
         
