@@ -37,11 +37,10 @@ if __name__ == "__main__":
             ii = np.isfinite(p[i])
             print "{0:15s}".format(sample[k]), "{0:5}".format(len(p[i][ii])),
             print "{0:8.2f}".format(p[i][ii].mean()), "{0:8.2f}".format(p[i][ii].std())
-        print "\n"
-    #     ax = plt.subplot(4,1,j+1)
-    #     # ax.hist(p)
-    #     ax.hist(p[idx_others])
-    #     ax.hist(p[idx_ne])
+            ax = plt.subplot(4,1,j+1)
+            ax.hist(p)
+            ax.hist(p[idx_others])
+            ax.hist(p[idx_ne])
     # plt.pause(0.001)
     # plt.show(block=1)
     raw_input()
