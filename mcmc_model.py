@@ -11,7 +11,7 @@ import shutil
 
 import numpy as np
 from scipy import stats
-from scipy.interpolate import NearestNDInterpolator, LinearNDInterpolator
+from scipy.interpolate import NearestNDInterpolator, LinearNDInterpolator, interpn
 import pymc
 
 from config import *
@@ -20,16 +20,15 @@ class SSP:
     """ Wrapper for the interpolated model."""
     def __init__(self, model_table, indices=np.arange(25), itype="nearest"):
         self.itype = itype
-        if self.itype == "nearest":
-            self.interpolator = NearestNDInterpolator
-        elif self.itype == "linear":
-            self.interpolator = LinearNDInterpolator
         self.interpolate(model_table)
         self.indices = indices 
     
     def interpolate(self, model_table):
         modeldata = np.loadtxt(model_table, dtype=np.double)
-        self.model = self.interpolator(modeldata[:,:3], modeldata[:,3:])
+        if self.itype == "nearest":
+            self.model = NearestNDInterpolator(modeldata[:,:3], modeldata[:,3:])
+        elif self.itype == "linear":
+            self.model = LinearNDInterpolator(modeldata[:,:3], modeldata[:,3:])
         
     def fn(self, age, metallicity, alpha): 
         return self.model(age, metallicity, alpha)[self.indices]
@@ -81,10 +80,10 @@ def get_model_lims():
 
 if __name__ == "__main__":
     lims = [[0.1, 15.], [-2.25, 0.67], [-0.3, 0.5]]
-    model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
+    model_table = os.path.join(tables_dir, "models_thomas_2010_metal_extrapolated.dat")
     model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
     age_dist = pymc.Uniform(name="age_dist", lower=1., upper=14.5)
-    metal_dist = pymc.Uniform(name="metal_dist", lower=-2.25, upper=0.67)
+    metal_dist = pymc.Uniform(name="metal_dist", lower=-2.25, upper=0.90)
     alpha_dist = pymc.Uniform(name="alpha_dist", lower=-0.3, upper=0.5)
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
@@ -138,7 +137,7 @@ if __name__ == "__main__":
 
         model = pymc.Model([y, age_dist, metal_dist, alpha_dist]) 
         mcmc = pymc.MCMC(model, db="txt", dbname=dbname)
-        mcmc.sample(10000, 1000, 3)
+        mcmc.sample(20000, 1000, 4)
         mcmc.db.close()
         mcmc.summary()
         db = pymc.database.txt.load(dbname)

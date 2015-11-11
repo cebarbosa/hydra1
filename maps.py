@@ -25,6 +25,7 @@ from scipy.interpolate import griddata
 from matplotlib import cm
 import brewer2mpl
 
+
 from config import *
 import newcolorbars as nc
 import canvas as cv
@@ -442,16 +443,25 @@ def make_sn():
     plt.savefig("figs/sn.png", dpi=100)
     return
 
-def draw_galaxies(fig, ax):
+def draw_galaxies(fig, ax, write=False):
     """ Draw galaxies in Richter 1987 catalog. """
     table = os.path.join(tables_dir, "misgeld_et_al_2008.tsv")
     ra, dec, diam = np.loadtxt(table, usecols=(0,1,15), delimiter="|").T
+    ids = np.loadtxt(table, usecols=(2,), delimiter="|", dtype=str).tolist()
+    ids = [r"$H{0}$".format(x) for x in ids]
     ################################################
     # Center is set in NGC 3311 according to catalog
     x = canvas.arcsec2kpc(3600. * (ra - canvas.ra0))
     y = canvas.arcsec2kpc(3600. * (dec -canvas.dec0))
     #################################################
-    ax.plot(x,y,"og", ms=16, markerfacecolor='none', mec="y")
+    ax.plot(x,y,"og", ms=16, markerfacecolor='none', mec="r", mew=2)
+    if not write:
+        return
+    for px, py, gal in zip(x,y,ids):
+        if np.abs(px) > 38 or np.abs(py) > 38:
+            continue
+        ax.scatter(px+1,py+4,marker=gal, c="r", s=500, edgecolors='r',
+                   zorder=100000)
     return
 
 def make_sb(im="vband"):
@@ -1141,7 +1151,7 @@ def make_other():
     names = [r"vband", r"residual", r"xrays"]
     cb_label = [r"$\mu_V$ (mag arcsec$^{-2}$)", r"$\mu_V$ (mag arcsec$^{-2}$)",
                 r"X-rays (counts)"]
-    xcb = [0.068, 0.385, 0.705]
+    xcb = [0.08, 0.39, 0.705]
     ###############################################
     # Set the threshold S/N for smoothing
     # Higher values than this values are not smoothed
@@ -1149,16 +1159,17 @@ def make_other():
     ###############################################
     fig = plt.figure(figsize=(15, 5))
     gs = gridspec.GridSpec(1,3)
-    gs.update(left=0.051, right=0.985, bottom=0.10, top=0.98, hspace=0.06,
+    gs.update(left=0.051, right=0.985, bottom=0.11, top=0.978, hspace=0.06,
               wspace=0.06)
     cb_fmts=["%.1f","%.1f", "%d"]
     ylabels = [1,0,0]
-    vmins = [19, 23., 65]
-    vmaxs = [25, 26, 130]
+    vmins = [20, 23., 65]
+    vmaxs = [24.5, 26, 125]
     green = nc.cmap_map(lambda x: x*0.8 + 0.2, cm.get_cmap("YlGn_r"))
     cmaps = ["gray", "cubehelix", green]
     labels = ["(A)", "(B)", "(C)"]
     # canvas_xrays.data = canvas_xrays.data_smooth
+    writegal = [True, False, False]
     for i, c in enumerate([canvas, canvas_res, canvas_xrays]):
         ax = plt.subplot(gs[i])
         ax.minorticks_on()
@@ -1167,9 +1178,9 @@ def make_other():
         ax.set_xlim(40,-40)
         ax.set_ylim(-40,40)
         xylabels(ax, y=ylabels[i])
-        draw_galaxies(fig, ax)
+        draw_galaxies(fig, ax, write=writegal[i])
         draw_contours("vband", fig, ax, c="k")
-        plt.gca().add_patch(Rectangle((9,-38),29.5,12, alpha=1, zorder=10,
+        plt.gca().add_patch(Rectangle((6,-38),32,12, alpha=1, zorder=1000,
                             color="w"))
         draw_colorbar(fig, ax, coll, cblabel=cb_label[i],
                       cbar_pos=[xcb[i], 0.16, 0.09, 0.04], pm=0,
@@ -1342,6 +1353,7 @@ def make_ssp(loess=False):
     ########################################################
     # Read data values for Lick indices
     data = np.loadtxt(outtable, usecols=(69,72,75,84)).T
+    ads = np.loadtxt(outtable, usecols=(87,88,89,90)).T
     # Changing units of age for log scale
     # data[0] += 9.
     # Read spectra name
@@ -1380,6 +1392,7 @@ def make_ssp(loess=False):
     for i, vector in enumerate(data):
         print "Producing figure for {0}...".format(titles[i])
         good = np.where(((np.isfinite(vector)) & (sn>sn_cut)))[0]
+        # good = np.where(((ads[i] < 50.) & (np.isfinite(vector))))[0]
         v = vector[good]
         robust_sigma =  1.4826 * np.median(np.abs(v - np.median(v)))
         vmin = np.median(v)  - 0.8 * robust_sigma
@@ -1497,9 +1510,9 @@ if __name__ == "__main__":
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    make_ssp()
+    # make_ssp()
     #####################################################
-    # make_other()
+    make_other()
     # make_sb(im="vband")
     #####################################################
     # Make interpolated maps with LOESS

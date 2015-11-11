@@ -56,7 +56,7 @@ def get_lick_regions():
            np.loadtxt(table, usecols=(6,7))
 
 if __name__ == "__main__":
-    wdir = home + "/single2"
+    wdir = home + "/single3"
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
@@ -88,6 +88,7 @@ if __name__ == "__main__":
         pp = pPXF(spec, velscale, pklfile=spec.replace(".fits", ".pkl"))
         pp.calc_sn()
         pp.calc_arrays_emission()
+
         if pp.ncomp > 1:
             sol = pp.sol[0]
             error = pp.error[0]
@@ -96,7 +97,10 @@ if __name__ == "__main__":
         else:
             sol = pp.sol
             error = pp.error
-        plt.plot(pp.w, pp.flux, "-k")
+        if pp.sky != None:
+            pp.galaxy-= pp.sky[0] * pp.weights[-1]
+            pp.bestfit -= pp.sky[0]* pp.weights[-1]
+        plt.plot(pp.w_log, pp.galaxy, "-k")
         plt.plot(pp.w_log[pp.goodpixels], pp.bestfit[pp.goodpixels], "-r",
                  lw=1.5)
         if pp.has_emission:

@@ -144,7 +144,7 @@ class Vdisp_corr_k04():
         return newlick
 
 if __name__ == "__main__":
-    workdir = os.path.join(home, "p6pc")
+    workdir = os.path.join(home, "single3")
     os.chdir(workdir)
     if not os.path.exists(os.path.join(workdir, "logs")):
         os.mkdir(os.path.join(workdir, "logs"))
@@ -170,6 +170,12 @@ if __name__ == "__main__":
         # Read the spectrum file and pPXF results
         pp = pPXF(spec, velscale)
         pp.calc_arrays_emission()
+        pp.sky_sub()
+        print pp.flux.mean()
+        pp.flux -= pp.sky_lin
+        print pp.weights.shape
+        print pp.flux.mean()
+        raw_input()
         if pp.ncomp > 1:
             v, s, h3, h4 = pp.sol[0]
         else:

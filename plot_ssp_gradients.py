@@ -20,6 +20,7 @@ import brewer2mpl
 
 from config import *
 import newcolorbars as nc
+from plot_lick_radius import mask_slits
 
 def f(x, zp, grad ):
     return zp + grad * x
@@ -37,6 +38,7 @@ if __name__ == "__main__":
     lum_weight = True
     plt.ion()
     os.chdir(os.path.join(home, "single2"))
+    mask_slits()
     pars = [r"log Age (yr)", r"[Z/H]", r"[$\alpha$/Fe]", r"[Fe/H]"]
     pars2 = [r"log Age (yr)", r"[Z/H]", r"[$\alpha$/Fe]", r"[Fe/H]"]
     table = "results_masked.tab"
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     ##########################################################################
     # Set figure parameters
     gs = gridspec.GridSpec(4,5)
-    gs.update(left=0.08, right=0.98, bottom = 0.06, top=0.98, hspace = 0.14,
+    gs.update(left=0.07, right=0.985, bottom = 0.065, top=0.985, hspace = 0.14,
                wspace=0.085)
     fig = plt.figure(1, figsize = (12, 9))
     xcb = 0.21
@@ -397,7 +399,7 @@ if __name__ == "__main__":
     print "\n\n"
     for l in tex2:
         print l + "\n"
-    plt.pause(0.0001)
+    # plt.pause(0.0001)
     plt.savefig("figs/ssps_radius.png", dpi=100)
     # ##########################################################################
     # # Write gradients to tables
