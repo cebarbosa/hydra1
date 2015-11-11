@@ -22,7 +22,7 @@ from load_templates import stellar_templates, emission_templates, \
                             wavelength_array
  
 def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
-             degree=20, pkls=None, plot=False):
+             degree=20, pkls=None, plot=False, data_sky=None):
     """ Run pPXF in a list of spectra"""
     if isinstance(spectra, str):
         spectra = [spectra]
@@ -88,6 +88,16 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
         if ncomp > 1:
             start = [start, [start[0], 30]]
         ######################################################################
+        # Read sky in needed
+        if data_sky == None:
+            sky = None
+        else:
+            sky_lin = pf.getdata(data_sky[i])
+            sky_lin = ndimage.gaussian_filter1d(sky_lin,sigma)
+            sky, logLam1, velscale = util.log_rebin(lamRange1, sky_lin,
+                                                    velscale=velscale)
+            sky = sky.reshape(-1,1)
+        ######################################################################
         # First pPXF interaction
         if os.path.exists(spec.replace(".fits", ".pkl")):
             pp0 = pPXF(spec, velscale, pklfile=spec.replace(".fits", ".pkl"))
@@ -95,7 +105,8 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
         else:
             pp0 = ppxf(templates, galaxy, noise, velscale, start,
                        goodpixels=goodPixels, plot=False, moments=moments,
-                       degree=12, mdegree=-1, vsyst=dv, component=components)
+                       degree=12, mdegree=-1, vsyst=dv, component=components,
+                       sky=sky)
             rms0 = galaxy[goodPixels] - pp0.bestfit[goodPixels]
             noise0 = 1.4826 * np.median(np.abs(rms0 - np.median(rms0)))
             noise0 = np.zeros_like(galaxy) + noise0
@@ -103,7 +114,7 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
         pp = ppxf(templates, galaxy, noise0, velscale, start,
                   goodpixels=goodPixels, plot=plot, moments=moments,
                   degree=degree, mdegree=mdegree, vsyst=dv,
-                  component=components)
+                  component=components, sky=sky)
         pp.template_files = templates_names
         pp.has_emission = has_emission
         ######################################################################
@@ -295,8 +306,12 @@ class pPXF():
     def calc_arrays_emission(self):
         """ Calculate arrays correcting for emission lines. """
         if self.has_emission:
-            em_weights = self.weights[-3:]
-            em_matrix = self.matrix[:,-3:]
+            if self.sky == None:
+                em_weights = self.weights[-3:]
+                em_matrix = self.matrix[:,-3:]
+            else:
+                em_weights = self.weights[-4:-1]
+                em_matrix = self.matrix[:,-4:-1]
             self.em = em_matrix.dot(em_weights)
             f = interp1d(self.w_log, self.em, kind="linear", bounds_error=False,
                          fill_value=0. )
@@ -305,6 +320,27 @@ class pPXF():
             self.em_linear = np.zeros_like(self.flux)
             self.em = np.zeros_like(self.bestfit)
         return
+
+    def sky_sub(self):
+        """ Make sky subtraction in case it was not done before. """
+        if self.sky != None:
+            sky_weight = self.weights[-1]
+            sky_matrix = self.matrix[:,-1]
+            self.sky_poly = sky_matrix.dot(sky_weight)
+            import matplotlib.pyplot as plt
+            ax = plt.subplot(111)
+            # ax.plot(self.galaxy, "-k")
+            ax.plot(self.sky_poly, "-b")
+            # ax.plot(self.galaxy -self.sky_poly , "-y")
+            plt.pause(1)
+            plt.show(block=1)
+            self.galaxy-= self.sky[0] * self.weights[-1]
+            self.bestfit -= self.sky[0]* self.weights[-1]
+            self.bestfit_unbroad -= self.sky[0]* self.weights[-1]
+            f = interp1d(self.w_log, self.sky.T[0] * self.weights[-1],
+                         kind="linear",
+                         bounds_error=False, fill_value=0. )
+            self.sky_lin = f(self.w)
 
 
 def speclist():
@@ -330,14 +366,16 @@ def speclist():
 if __name__ == '__main__':
     ##########################################################################
     # Change to data directory according to setup.py program
-    wdir = home + "/p6pc"
+    wdir = home + "/single3"
     os.chdir(wdir)
     spectra = speclist()
-    # spectra = "fin1_n3311cen2_s39.fits"
+    skies = [x.replace("fin", "sky") for x in spectra]
+    sky_dir = os.path.join(home, "sky/1D")
+    skies = [os.path.join(sky_dir, x) for x in skies]
     ##########################################################################
     # Go to the main routine of fitting
     run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
-             degree=12, plot=True)
+             degree=12, plot=True, data_sky=skies)
     # plt.pause(0.001)
     # plt.show(block=1)
     # for spec in spectra:

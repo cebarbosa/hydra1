@@ -15,8 +15,10 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.optimize import fmin
 import matplotlib.cm as cm
+from matplotlib.mlab import normpdf
 from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
+from sklearn.mixture import GMM
 
 from config import *
 from run_ppxf import speclist
@@ -28,13 +30,14 @@ class Dist():
         self.lims = lims
         self.bw = bw
         self.genextreme = genextreme(self.data)
-        self.norm = statdist(self.data, stats.norm)
-        self.truncnorm = statdist(self.data, stats.truncnorm)
+        self.norm = statdist(self.data, stats.norm, "norm")
+        self.truncnorm = statdist(self.data, stats.truncnorm, "truncnorm")
+        self.gmm = gmm(self.data)
         dists = [self.genextreme, self.norm, self.truncnorm]
         idx = np.argmin([x.ad for x in dists])
         self.dist = dists[idx]
         self.MAPP = fmin(lambda x: -self.dist.pdf(x),
-                         0.5 * (self.data.min() + self.data.max()), disp=0)[0]
+                        self.dist.moments[0], disp=0)[0]
         # # Calculate percentiles
         self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
         self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
@@ -48,34 +51,52 @@ class Dist():
 class genextreme():
     def __init__(self, data):
         self.dist = stats.genextreme
+        self.distname = "genextreme"
         self.data = data
         self.p = self.dist.fit(self.data)
         self.pdf = lambda x : stats.genextreme.pdf(x, *self.p[:-2],
                     loc=self.p[-2], scale=self.p[-1])
         self.sample = stats.genextreme.rvs(self.p[0], size=len(self.data),
                                            loc=self.p[-2], scale=self.p[-1])
+        self.moments = self.dist.stats(*self.p, moments="mvsk")
         try:
             self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
         except:
             self.ad = np.infty
 
 class statdist():
-    def __init__(self, data, dist):
+    def __init__(self, data, dist, distname):
         self.dist = dist
+        self.distname = distname
         self.data = data
         self.p = self.dist.fit(self.data)
         self.pdf = lambda x : self.dist.pdf(x, *self.p[:-2], loc=self.p[-2],
                                             scale=self.p[-1])
         self.sample = stats.norm.rvs(self.p[0], size=len(self.data),
                                            scale=self.p[-1])
+        self.moments = self.dist.stats(*self.p, moments="mvsk")
         try:
             self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
         except:
             self.ad = np.infty
 
+class gmm():
+    def __init__(self, data):
+        self.distname = "gmm"
+        self.data = data
+        self.n_components = np.arange(1,11)
+        self.models = []
+        self.X = np.reshape(self.data, (len(self.data),1))
+        for i in self.n_components:
+            self.models.append(GMM(i, covariance_type='full').fit(self.X))
+        self.AIC = [m.aic(self.X) for m in self.models]
+        self.BIC = np.array([m.bic(self.X) for m in self.models])
+        self.imin = np.minimum(np.argmin(self.AIC), np.argmin(self.BIC))
+        self.best = self.models[self.imin]
+
 def hist2D(dist1, dist2, ax):
     """ Plot distribution and confidence contours. """
-    X, Y = np.mgrid[dist1.lims[0] : dist1.lims[1] : 20j, 
+    X, Y = np.mgrid[dist1.lims[0] : dist1.lims[1] : 20j,
                     dist2.lims[0] : dist2.lims[1] : 20j]
     extent = [dist1.lims[0], dist1.lims[1], dist2.lims[0], dist2.lims[1]]
     positions = np.vstack([X.ravel(), Y.ravel()])    
@@ -87,6 +108,7 @@ def hist2D(dist1, dist2, ax):
     # plt.hist2d(dist1.data, dist2.data, bins=40, cmap="gray_r")
     plt.axvline(dist1.MAPP, c="r", ls="--")
     plt.axhline(dist2.MAPP, c="r", ls="--")
+    plt.tick_params(labelsize=10)
     ax.minorticks_on()
     return
 
@@ -111,9 +133,9 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
-    specs = ["fin1_n3311out2_s36.fits"]
+    specs = ["fin1_n3311cen1_s37.fits"]
     dirs = [x.replace(".fits", "_db") for x in specs]
-    lims = [[9 + np.log10(1.), 9 + np.log10(15.)], [-2.25, 0.67], [-0.3, 0.5]]
+    lims = [[9 + np.log10(1.), 9 + np.log10(15.)], [-2.25, 0.90], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
     fignums = [4, 7, 8]
     pairs = [[0,1], [0,2], [1,2]]
@@ -137,7 +159,7 @@ if __name__ == "__main__":
         ages_data = 9. + np.log10(ages_data)
         ages = Dist(ages_data, [9 + np.log10(1), 9 + np.log10(15)])
         metal_data = np.loadtxt("Chain_0/metal_dist.txt")
-        metal = Dist(metal_data, [-2.25, 0.67])
+        metal = Dist(metal_data, [-2.25, 0.90])
         alpha_data = np.loadtxt("Chain_0/alpha_dist.txt")
         alpha = Dist(alpha_data, [-0.3, 0.5])
         dists = [ages, metal, alpha]
@@ -145,7 +167,8 @@ if __name__ == "__main__":
         for i, d in enumerate(dists):
             weights = np.ones_like(d.data)/len(d.data)
             ax = plt.subplot(3,3,(4*i)+1)
-            N, bins, patches = plt.hist(d.data, color="w", weights=weights,
+            plt.tick_params(labelsize=10)
+            N, bins, patches = plt.hist(d.data, color="w",
                                         ec="w", bins=30, range=tuple(lims[i]),
                                         normed=True)
             fracs = N.astype(float)/N.max()
@@ -154,13 +177,23 @@ if __name__ == "__main__":
                 color = cm.gray_r(norm(thisfrac))
                 thispatch.set_facecolor(color)
             x = np.linspace(d.data.min(), d.data.max(), 100)
+            tot = np.zeros_like(x)
+            for m,w,c in zip(d.gmm.best.means_, d.gmm.best.weights_,
+                             d.gmm.best.covars_):
+                y = w * normpdf(x, m, np.sqrt(c))[0]
+                ax.plot(x, y, "--b")
+                tot += y
+            ax.plot(x,tot, "-b", lw=2)
+            # pdf = np.exp(logprob)
+            # pdf_individual = responsibilities * pdf[:, np.newaxis]
+            # print pdf_individual
             ylim = ax.get_ylim()
             plt.plot(x, d.dist.pdf(x), "-r", label="AD = {0:.1f}".format(
                 d.dist.ad))
             ax.set_ylim(ylim)
             plt.legend(loc=2, prop={'size':8})
             plt.axvline(d.MAPP, c="r", ls="--")
-            plt.tick_params(labelright=True, labelleft=False)
+            plt.tick_params(labelright=True, labelleft=False, labelsize=10)
             plt.xlim(d.lims)
             if i < 2:
                 plt.setp(ax.get_xticklabels(), visible=False)

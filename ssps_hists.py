@@ -10,8 +10,11 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.mixture import GMM
+from matplotlib.mlab import normpdf
 
 from config import *
+from mcmc_analysis import gmm
 
 def make_fe_traces(specs):
     """ Create artificial [Fe/H] traces. """
@@ -60,21 +63,44 @@ if __name__ == "__main__":
     ssps = data[:,2:6].T
     sn = data[:,6]
     ads = data[:,7:].T
-    parameters = [r" log Age", "[Z/H]", "[alpha/Fe]", "Fe/H"]
+    parameters = [r" log Age", "[Z/H]", r"[$\alpha$/Fe]", "[Fe/H]"]
     filenames = ["age_dist.txt", "metal_dist.txt", "alpha_dist.txt",
                  "iron_dist.txt"]
+    colors = ["w", "r", "gray"]
+    labels = ["All", "Off-Centered Envelope", "Symmetric Halo"]
+    fig = plt.figure(1, figsize=(6,7))
+    plt.subplots_adjust(bottom=0.08, right=0.98, top=0.98, left=0.05)
+    xlims = [[9.8,10.2], [-2,1], [-.3,0.5], [-1.5,1]]
     for j, (values, test) in enumerate(zip(ssps,ads)):
         # data = get_data(specs, filenames[j])
-        for k, i in enumerate([idx, idx_others, idx_ne]):
+        for k, i in enumerate([idx, idx_ne, idx_others]):
             t = test[i]
             v = values[i]
             cond = np.where(t < 15)[0]
             if k == 0:
-                bins= np.histogram(v[cond], bins=15)[1]
+                bins= np.histogram(v[cond], bins=10)[1]
             else:
-                ax = plt.subplot(8,1,2*j+k)
+                ax = plt.subplot(2,2,j+1)
+                plt.locator_params(nbins=5)
+                ax.minorticks_on()
                 weights = np.ones_like(v[cond])/float(len(v[cond]))
-                ax.hist(v[cond], bins=bins, normed=1, weights=weights)
-                ax.set_xlim(bins[0], bins[-1])
+                ax.hist(v[cond], bins=bins, normed=True, weights=None,
+                        alpha=0.5, histtype='stepfilled', color=colors[k],
+                        edgecolor="none", label=labels[k])
+                ax.set_xlim(*xlims[j])
+                ax.set_xlabel(parameters[j])
+                # ax.axvline(v[cond].mean(), c=colors[k], lw=2, ls="--")
+                if j in [0,2] and k==2:
+                    plt.legend(loc='upper left', prop={'size':9})
+                d = gmm(v[cond])
+
+                d.best = d.models[np.argmin(d.BIC)]
+                x = np.linspace(xlims[j][0], xlims[j][1], 100)
+                for m,w,c in zip(d.best.means_, d.best.weights_,
+                                 d.best.covars_):
+                    y = w * normpdf(x, m, np.sqrt(c))[0]
+                    ax.plot(x, y, "--", c=colors[k])
+
     plt.pause(0.001)
-    plt.show(block=1)
+    plt.savefig(os.path.join(os.getcwd(), "figs/hist_outer.png"))
+    # plt.show(block=1)
