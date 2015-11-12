@@ -18,7 +18,7 @@ import matplotlib.cm as cm
 from matplotlib.mlab import normpdf
 from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
-from sklearn.mixture import GMM
+# from sklearn.mixture import GMM
 
 from config import *
 from run_ppxf import speclist
