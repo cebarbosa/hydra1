@@ -18,7 +18,7 @@ if __name__ == "__main__":
     data = np.loadtxt("results.tab", usecols=(69,72,75,84)).T
     errp = np.loadtxt("results.tab", usecols=(70,73,76,85)).T
     errm = np.loadtxt("results.tab", usecols=(71,74,77,86)).T
-    err = np.maximum(np.abs(errp - data), np.abs(errm - data))
+    err = np.abs(errp - errm) / 2
     fig = plt.figure(1)
     for i in range(4):
         ax = plt.subplot(4,1,i+1)

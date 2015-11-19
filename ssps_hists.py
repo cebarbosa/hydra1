@@ -10,8 +10,9 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-# from sklearn.mixture import GMM
+from sklearn.mixture import GMM
 from matplotlib.mlab import normpdf
+from scipy.stats import ks_2samp, anderson_ksamp
 
 from config import *
 from mcmc_analysis import gmm
@@ -42,19 +43,22 @@ def get_data(specs, filename):
         data[i] = d
     return data
 
+def mean_errors(table):
+    """ Calculate the maximum error in a given parameter for """
+    errp = np.loadtxt(table, usecols=(70,73,76,85)).T
+    errm = np.loadtxt(table, usecols=(71,74,77,86)).T
+    return np.transpose(0.5 * np.abs(errp - errm))
+
+
 if __name__ == "__main__":
     os.chdir(os.path.join(home, "single2"))
     # Cols: 0:R, 1:PA, 2-5: SSPs, 6:S/N, 7-10:AD test
-    data = np.loadtxt("results_masked.tab", usecols=(3,4,69,72,75,84,14,87,
-                                                     88,89,90))
+    data = np.loadtxt("results_masked.tab", usecols=(3,4,69,72,75,84,14))
     specs = np.loadtxt("results_masked.tab", usecols=(0,), dtype=str)
     sn = np.loadtxt("results_masked.tab", usecols=(14,))
     # Calculating maximum errors
-    data1 = np.loadtxt("results_masked.tab", usecols=(69,72,75,84)).T
-    errp = np.loadtxt("results_masked.tab", usecols=(70,73,76,85)).T
-    errm = np.loadtxt("results_masked.tab", usecols=(71,74,77,86)).T
-    err = np.maximum(np.abs(errp - data1), np.abs(errm - data1)).T
-    err_cut = np.array([0.2, 0.4, 0.2, 0.6])
+    err = mean_errors("results_masked.tab")
+    err_cut = np.array([0.2, 0.7, 0.22, 0.8])
     ##########################################################################
     # Filtering data for inner radius
     specs = specs[data[:,0] > re]
@@ -70,44 +74,74 @@ if __name__ == "__main__":
     ssps = data[:,2:6].T
     sn = data[:,6]
     ads = data[:,7:].T
-    parameters = [r" log Age", "[Z/H]", r"[$\alpha$/Fe]", "[Fe/H]"]
+    parameters = [r" log Age (Gyr)", "[Z/H]", r"[$\alpha$/Fe]", "[Fe/H]"]
     filenames = ["age_dist.txt", "metal_dist.txt", "alpha_dist.txt",
                  "iron_dist.txt"]
     colors = ["w", "r", "gray"]
-    labels = ["All", "Off-Centered \nHalo (N=", "Symmetric Halo\n(N="]
-    fig = plt.figure(1, figsize=(6,7))
-    plt.subplots_adjust(bottom=0.08, right=0.98, top=0.98, left=0.05)
+    labels = ["All", "Off-Centered \nEnvelope (N=", "Symmetric Halo\n(N="]
+    tablab = ["All", "Off-Centered Envelope", "Symmetric Halo"]
+    fig = plt.figure(1, figsize=(7,7))
+    plt.subplots_adjust(bottom=0.08, right=0.98, top=0.98, left=0.1)
+    ylims = [0.5, 0.5, 0.4, 0.5]
     xlims = [[10,10.2], [-2,1], [-.3,0.5], [-1.5,1]]
     for j, (values, error) in enumerate(zip(ssps,err)):
-        print parameters[j]
+        print ks_2samp(values[idx_ne], values[idx_others])
+        print anderson_ksamp((values[idx_ne], values[idx_others]))
+        header = [parameters[j], "N", "MEAN", "SIGMA", "WEIGHT"]
+        # print " & ".join(header) + "\\\\"
         for k, i in enumerate([idx, idx_ne, idx_others]):
-            print labels[k]
             e = error[i]
             v = values[i]
             cond = np.where(e < err_cut[j])[0]
             if k == 0:
-                bins= np.histogram(v[cond], bins=10, range=xlims[j])[1]
+                bins= np.histogram(v[cond], bins=11, range=xlims[j], normed=1)[1]
+                d = gmm(v[cond])
+                d.best = d.models[np.argmin(d.BIC)]
+                for l, (m,w,c) in enumerate(zip(d.best.means_, d.best.weights_,
+                                 d.best.covars_)):
+                    line = [tablab[k], len(v[cond]), round(m, 2),
+                                round(np.sqrt(c),2), round(w,2)]
+                    # print " & ".join([str(x) for x in line]) + "\\\\"
             else:
                 ax = plt.subplot(2,2,j+1)
                 plt.locator_params(nbins=5)
                 ax.minorticks_on()
                 weights = np.ones_like(v[cond])/float(len(v[cond]))
-                ax.hist(v[cond], bins=bins, normed=True, weights=None,
+                ax.hist(v[cond], bins=bins, normed=False, weights=weights,
                         alpha=0.5, histtype='stepfilled', color=colors[k],
                         edgecolor="none", label=labels[k]+str(len(v[cond]))+")")
                 ax.set_xlim(*xlims[j])
                 ax.set_xlabel(parameters[j])
                 # ax.axvline(v[cond].mean(), c=colors[k], lw=2, ls="--")
                 plt.legend(loc='upper left', prop={'size':10}, frameon=False)
-                # d = gmm(v[cond])
-                #
-                # d.best = d.models[np.argmin(d.BIC)]
-                # x = np.linspace(xlims[j][0], xlims[j][1], 100)
-                # for m,w,c in zip(d.best.means_, d.best.weights_,
-                #                  d.best.covars_):
-                #     y = w * normpdf(x, m, np.sqrt(c))[0]
-                #     ax.plot(x, y, "--", c=colors[k])
+                d = gmm(v[cond])
+                imin = np.argmin(d.BIC)
+                d.best = d.models[np.argmin(d.BIC)]
+                # d.best = d.models[1]
+                x = np.linspace(xlims[j][0], xlims[j][1], 100)
+                print np.median(v[cond])
+                for l, (m,w,c) in enumerate(zip(d.best.means_, d.best.weights_,
+                                 d.best.covars_)):
+                    y = w * normpdf(x, m, np.sqrt(c))[0]
+                    ax.plot(x, y * (bins[1] - bins[0]), "--", c=colors[k])
+                    ax.arrow(float(m), 0, 0, 0.12 * ylims[j],
+                             head_width=0.02 * (xlims[j][1] - xlims[j][0]),
+                             head_length=0.05 * ylims[j],
+                             fc=colors[k], ec=colors[k])
+                    # ax.axvline(m, c=colors[k], ls="--", lw=1.5)
+                    if l == 0:
+                        line = [r"\multirow{{{1}}}{{*}}{{{0}}}".format(parameters[j],
+                         len(d.best.means_)), tablab[k], len(v[cond]), round(m, 2),
+                                round(np.sqrt(c),2), round(w,2)]
+                    else:
+                        line = [" ", " ", round(m, 2), round(np.sqrt(c),2),
+                                round(w,2)]
+                if j in [0,2]:
+                    ax.set_ylabel(r"Fraction of total")
+                ax.set_ylim(0, ylims[j])
+                #     print " & ".join([str(xx) for xx in line]) + "\\\\"
+                # print  "\multicolumn{6}{c}{- - - - - -}\\\\"
 
     plt.pause(0.001)
     plt.savefig(os.path.join(os.getcwd(), "figs/hist_outer.png"))
-    # plt.show(block=1)
+    plt.show()

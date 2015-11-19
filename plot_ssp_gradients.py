@@ -276,10 +276,10 @@ if __name__ == "__main__":
         ######################################################################
         # Outer halo
         mask = ~np.isnan(yc2)
-        if i == 0:
-            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask], sigma=yc2err)
-        else:
-            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask])
+        # if i == 0:
+        popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask], sigma=yc2err)
+        # else:
+        #     popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask])
         pcov2 = np.sqrt(np.diagonal(pcov2) + 0.01**2)
         label = r"{1:.2f}$\pm${2:.2f}".format(
                     pars2[i], round(popt2[1],2), round(pcov2[1],2),
@@ -324,10 +324,10 @@ if __name__ == "__main__":
                         color="0.5", linewidth=0, alpha=0.3)
         ######################################################################
         # Outer halo
-        if i == 0:
-            popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask], sigma=yc2err[mask])
-        else:
-            popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask])
+        # if i == 0:
+        popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask], sigma=yc2err[mask])
+        # else:
+        #     popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask])
         pcov4 = np.sqrt(np.diagonal(pcov4) + 0.01**2)
         label = r"{1:.2f}$\pm${2:.2f}".format(
                     pars2[i], round(popt4[1],2), round(pcov4[1],2),

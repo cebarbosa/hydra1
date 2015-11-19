@@ -13,12 +13,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-from scipy.optimize import fmin
+from scipy.optimize import fmin, fminbound
+from scipy.integrate import quad
 import matplotlib.cm as cm
 from matplotlib.mlab import normpdf
 from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
-# from sklearn.mixture import GMM
+from sklearn.mixture import GMM
 
 from config import *
 from run_ppxf import speclist
@@ -32,21 +33,40 @@ class Dist():
         self.genextreme = genextreme(self.data)
         self.norm = statdist(self.data, stats.norm, "norm")
         self.truncnorm = statdist(self.data, stats.truncnorm, "truncnorm")
-        self.gmm = gmm(self.data)
-        dists = [self.genextreme, self.norm, self.truncnorm]
+        # self.gmm = gmm(self.data)
+        dists = [self.genextreme, self.norm]
         idx = np.argmin([x.ad for x in dists])
-        self.dist = dists[idx]
-        self.MAPP = fmin(lambda x: -self.dist.pdf(x),
-                        self.dist.moments[0], disp=0)[0]
+        self.best = dists[idx]
+        self.MAPP = self.best.MAPP
+        self.calc_err()
         # # Calculate percentiles
-        self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
-        self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
-        self.percentilemin = np.maximum(self.percentileatmapp - 34., 0.)
-        self.MAPPmin = stats.scoreatpercentile(self.data, self.percentilemin)
-        self.MAPPmax = stats.scoreatpercentile(self.data, self.percentilemax)
+        # self.percentileatmapp =  stats.percentileofscore(self.data, self.MAPP)
+        # self.percentilemax = np.minimum(self.percentileatmapp + 34., 100.)
+        # self.percentilemin = np.maximum(self.percentileatmapp - 34., 0.)
+        # self.MAPPmin = stats.scoreatpercentile(self.data, self.percentilemin)
+        # self.MAPPmax = stats.scoreatpercentile(self.data, self.percentilemax)
         self.lerr = np.sqrt(self.bw**2 + np.abs(self.MAPP - self.MAPPmin)**2)
         self.uerr = np.sqrt(self.bw**2 + np.abs(self.MAPP - self.MAPPmax)**2)
         return
+
+    def calc_err(self):
+        """ Calculate error for the best distribution. """
+        r = np.abs(self.lims[0] - self.lims[1])
+        def integral(y, return_x=False):
+
+            x0 = float(fminbound(lambda x: np.abs(self.best.pdf(x) - y),
+                       self.lims[0], self.best.MAPP, full_output=1)[0])
+            x1 = float(fminbound(lambda x: np.abs(self.best.pdf(x) - y),
+                       self.best.MAPP, self.lims[1], full_output=1)[0])
+            if not return_x:
+                return quad(self.best.pdf, x0, x1)[0]
+            else:
+                return x0, x1
+        y = fmin(lambda x: np.abs(integral(x) - 0.68),
+                        0.6 * self.best.pdf(self.best.MAPP), disp=0)
+        self.MAPPmin,  self.MAPPmax = integral(y, return_x=True)
+        return
+
 
 class genextreme():
     def __init__(self, data):
@@ -54,11 +74,13 @@ class genextreme():
         self.distname = "genextreme"
         self.data = data
         self.p = self.dist.fit(self.data)
-        self.pdf = lambda x : stats.genextreme.pdf(x, *self.p[:-2],
-                    loc=self.p[-2], scale=self.p[-1])
-        self.sample = stats.genextreme.rvs(self.p[0], size=len(self.data),
-                                           loc=self.p[-2], scale=self.p[-1])
-        self.moments = self.dist.stats(*self.p, moments="mvsk")
+        self.frozen = self.dist(self.p[0], loc=self.p[1], scale=self.p[2])
+        self.pdf = lambda x : self.frozen.pdf(x)
+        self.sample = self.frozen.rvs(len(self.data))
+        self.sample2 = self.frozen.rvs(100000)
+        self.moments = self.frozen.stats(moments="mvsk")
+        self.MAPP = fmin(lambda x: -self.pdf(x),
+                        self.moments[0], disp=0)[0]
         try:
             self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
         except:
@@ -75,6 +97,8 @@ class statdist():
         self.sample = stats.norm.rvs(self.p[0], size=len(self.data),
                                            scale=self.p[-1])
         self.moments = self.dist.stats(*self.p, moments="mvsk")
+        self.MAPP = fmin(lambda x: -self.pdf(x),
+                        self.moments[0], disp=0)[0]
         try:
             self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
         except:
@@ -89,8 +113,11 @@ class gmm():
         self.X = np.reshape(self.data, (len(self.data),1))
         for i in self.n_components:
             self.models.append(GMM(i, covariance_type='full').fit(self.X))
-        self.AIC = [m.aic(self.X) for m in self.models]
+        self.AIC = np.array([m.aic(self.X) for m in self.models])
         self.BIC = np.array([m.bic(self.X) for m in self.models])
+        self.k = 2 * np.arange(1,11)
+        self.n = len(self.data)
+        self.AICc = self.AIC + 2*self.k * (self.k + 1) / (self.n - self.k - 1)
         self.imin = np.minimum(np.argmin(self.AIC), np.argmin(self.BIC))
         self.best = self.models[self.imin]
 
@@ -133,7 +160,7 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
-    specs = ["fin1_n3311cen1_s37.fits"]
+    # specs = ["fin1_n3311cen1_s21.fits"]
     dirs = [x.replace(".fits", "_db") for x in specs]
     lims = [[9 + np.log10(1.), 9 + np.log10(15.)], [-2.25, 0.90], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
@@ -178,21 +205,21 @@ if __name__ == "__main__":
                 thispatch.set_facecolor(color)
             x = np.linspace(d.data.min(), d.data.max(), 100)
             tot = np.zeros_like(x)
-            for m,w,c in zip(d.gmm.best.means_, d.gmm.best.weights_,
-                             d.gmm.best.covars_):
-                y = w * normpdf(x, m, np.sqrt(c))[0]
-                ax.plot(x, y, "--b")
-                tot += y
-            ax.plot(x,tot, "-b", lw=2)
+            # for m,w,c in zip(d.gmm.best.means_, d.gmm.best.weights_,
+            #                  d.gmm.best.covars_):
+            #     y = w * normpdf(x, m, np.sqrt(c))[0]
+            #     ax.plot(x, y, "--b")
+            #     tot += y
+            # ax.plot(x,tot, "-b", lw=2)
             # pdf = np.exp(logprob)
             # pdf_individual = responsibilities * pdf[:, np.newaxis]
             # print pdf_individual
             ylim = ax.get_ylim()
-            plt.plot(x, d.dist.pdf(x), "-r", label="AD = {0:.1f}".format(
-                d.dist.ad))
+            plt.plot(x, d.best.pdf(x), "-r", label="AD = {0:.1f}".format(
+                d.best.ad))
             ax.set_ylim(ylim)
             plt.legend(loc=2, prop={'size':8})
-            plt.axvline(d.MAPP, c="r", ls="--")
+            plt.axvline(d.best.MAPP, c="r", ls="--")
             plt.tick_params(labelright=True, labelleft=False, labelsize=10)
             plt.xlim(d.lims)
             if i < 2:
@@ -200,8 +227,8 @@ if __name__ == "__main__":
             else:
                 plt.xlabel(r"[$\mathregular{\alpha}$ / Fe]")
             plt.minorticks_on()
-            summary.append([d.MAPP, d.uerr, d.lerr])
-            for ss in [d.MAPP, d.MAPPmin, d.MAPPmax, d.dist.ad]:
+            summary.append([d.best.MAPP, d.uerr, d.lerr])
+            for ss in [d.MAPP, d.MAPPmin, d.MAPPmax, d.best.ad]:
                 log.append(r"{0:10s}".format(r"{0:.5f}".format(ss)))
         logfile = os.path.join(working_dir, folder, "summary.txt")
         with open(logfile, "w") as f:

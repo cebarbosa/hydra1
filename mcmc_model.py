@@ -130,7 +130,8 @@ if __name__ == "__main__":
 
         @pymc.deterministic()
         def ssp1err(age=age_dist, metal=metal_dist, alpha=alpha_dist):
-            return 1 / (obserr**2 + ssperr(age, metal, alpha))
+            # return 1 / (obserr**2 + ssperr(age, metal, alpha))
+            return 1 / (obserr**2)
 
         y = pymc.Normal(name="y", mu=ssp1, tau=ssp1err,
                         value=obsdata, observed=True)
