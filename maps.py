@@ -124,7 +124,7 @@ def merge_polys():
     return np.array(newpolys)
         
 def merge_tables():
-    files = ["ppxf_results.dat", "lick_corr.tsv", "populations.txt",
+    files = ["ppxf_results.dat", "lick_corr.tsv", "populations_thomas.txt",
              "mc_lick_nsim400.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
@@ -1345,7 +1345,7 @@ def make_ssp(loess=False):
     ########################################################
     # Read data values for Lick indices
     data = np.loadtxt(outtable, usecols=(69,72,75,84)).T
-    ads = np.loadtxt(outtable, usecols=(87,88,89,90)).T
+    # ads = np.loadtxt(outtable, usecols=(87,88,89,90)).T
     # Changing units of age for log scale
     # data[0] += 9.
     # Read spectra name
@@ -1502,7 +1502,7 @@ if __name__ == "__main__":
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    # make_ssp()
+    make_ssp()
     #####################################################
     # make_other()
     # make_sb(im="vband")

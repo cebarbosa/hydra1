@@ -65,31 +65,36 @@ def read_data(tab1, tab2):
     s1 = np.array(s1)[idx1]
     return s1, data, errs
 
-def get_model_lims():
+def get_model_lims(table):
     """ Get the range for the indices according to models. """
-    modeldata = np.loadtxt(os.path.join(tables_dir, "models_thomas_2010.dat"))
+    modeldata = np.loadtxt(table)
     indices = modeldata[:,3:].T
+    vars = modeldata[:,:3].T
+    ranges = np.column_stack((np.min(vars, axis=1), np.max(vars, axis=1)))
     lims = np.zeros((len(indices), 2))
     for i, index in enumerate(indices):
         lims[i] = [index.min(), index.max()]
     lim_excess =  0.5 * np.abs(np.diff(lims)).T[0]
     lims[:,0] -= lim_excess
     lims[:,1] += lim_excess
-    return lims
-
+    return lims, ranges
 
 if __name__ == "__main__":
     lims = [[0.1, 15.], [-2.25, 0.67], [-0.3, 0.5]]
-    model_table = os.path.join(tables_dir, "models_thomas_2010_metal_extrapolated.dat")
-    model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
-    age_dist = pymc.Uniform(name="age_dist", lower=1., upper=14.5)
-    metal_dist = pymc.Uniform(name="metal_dist", lower=-2.25, upper=0.90)
-    alpha_dist = pymc.Uniform(name="alpha_dist", lower=-0.3, upper=0.5)
+    model_table = os.path.join(tables_dir, "MILESII.txt")
+    db = "2" if model_table.endswith("MILESII.txt") else ""
+    lims, ranges = get_model_lims(model_table)
+    # model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
+    age_dist = pymc.Uniform(name="age_dist", lower=ranges[0,0],
+                            upper=ranges[0,1])
+    metal_dist = pymc.Uniform(name="metal_dist", lower=ranges[1,0],
+                              upper=ranges[1,1])
+    alpha_dist = pymc.Uniform(name="alpha_dist", lower=ranges[2,0],
+                              upper=ranges[2,1])
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
-    spectra, data, errs = read_data("lick_corr.tsv",
+    spectra, data, errs = read_data("lick_vdcorr_instres.tsv",
                                     "mc_lick_nsim400.txt")
-    lims = get_model_lims()
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):
         ######################################################################
@@ -102,11 +107,12 @@ if __name__ == "__main__":
              if obsdata[idx] <= lims[idx,0] or  obsdata[idx] > lims[idx,1]:
                  obsdata[idx] = np.nan
         ######################################################################
-        dbname = spec.replace(".fits", "_db")
+        dbname = spec.replace(".fits", "_db{0}".format(db))
         dbfolder = os.path.join(working_dir, dbname)
         if os.path.exists(dbfolder):
             continue
-        print "Working with spectra {2} ({0} / {1})".format(i+1, len(spectra), spec)
+        print "Working with spectra {2} ({0} / {1})".format(i+1, len(spectra),
+                                                            spec)
         if i == 0:
             with open(outtable, "w") as f:
                 f.write("# Spectra\tAge(Gyr)\tAge-\tAge+\t[Z/H]\t[Z/H]"
@@ -121,7 +127,7 @@ if __name__ == "__main__":
         obsdata = obsdata[indcols]
         obserr = obserr[indcols]
         # taus = 1 / obserr**2
-        ssperr = SSP(model_table_err, indcols, itype="nearest")
+        # ssperr = SSP(model_table_err, indcols, itype="nearest")
         ssp = SSP(model_table, indcols, itype="linear")
 
         @pymc.deterministic()

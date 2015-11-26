@@ -139,18 +139,19 @@ def hist2D(dist1, dist2, ax):
     ax.minorticks_on()
     return
 
-def summary_table(specs):
+def summary_table(specs, modelname, db):
     """ Make final table."""
     lines = []
     for spec in specs:
-        folder = spec.replace(".fits", "_db")
-        logfile = os.path.join(working_dir, folder, "summary.txt")
+        folder = spec.replace(".fits", "_db{0}".format(db))
+        logfile = os.path.join(working_dir, folder,
+                               "summary.txt")
         if not os.path.exists(logfile):
             continue
         with open(logfile, "r") as f:
             header = f.readline()
             lines.append(f.readline())
-    table = os.path.join(working_dir, "populations.txt")
+    table = os.path.join(working_dir, "populations_{0}.txt".format(modelname))
     with open(table, "w") as f:
         f.write(header)
         f.write("\n".join(lines))
@@ -160,21 +161,25 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
-    # specs = ["fin1_n3311cen1_s21.fits"]
-    dirs = [x.replace(".fits", "_db") for x in specs]
+    specs = ["fin1_n3311cen1_s23.fits", "fin1_n3311cen1_s30.fits"]
+    db = ""
+    modelname = "miles" if db == "2" else "thomas"
+    dirs = [x.replace(".fits", "_db{0}".format(db)) for x in specs]
     lims = [[9 + np.log10(1.), 9 + np.log10(15.)], [-2.25, 0.90], [-0.3, 0.5]]
     plims = [[np.log10(1.), 1.2], [-2.3, 0.7], [-0.4, 0.6]]
     fignums = [4, 7, 8]
     pairs = [[0,1], [0,2], [1,2]]
     plt.ioff()
-    pp = PdfPages(os.path.join(working_dir, "mcmc_results.pdf"))
+    pp = PdfPages(os.path.join(working_dir,
+                               "mcmc_results_{0}.pdf".format(modelname)))
     plt.figure(1, figsize=(9,6.5))
     plt.minorticks_on()
     table_summary, table_results = [], []
     sndata = dict(np.loadtxt("ppxf_results.dat", usecols=(0,10), dtype=str))
     for spec in specs:
         print spec
-        folder = spec.replace(".fits", "_db")
+        # continue
+        folder = spec.replace(".fits", "_db{0}".format(db))
         if not os.path.exists(os.path.join(working_dir, folder)):
             continue
         os.chdir(os.path.join(working_dir, folder))
@@ -216,9 +221,9 @@ if __name__ == "__main__":
             # print pdf_individual
             ylim = ax.get_ylim()
             plt.plot(x, d.best.pdf(x), "-r", label="AD = {0:.1f}".format(
-                d.best.ad))
+                d.best.ad), lw=2.5, alpha=0.7)
             ax.set_ylim(ylim)
-            plt.legend(loc=2, prop={'size':8})
+            # plt.legend(loc=2, prop={'size':8})
             plt.axvline(d.best.MAPP, c="r", ls="--")
             plt.tick_params(labelright=True, labelleft=False, labelsize=10)
             plt.xlim(d.lims)
@@ -230,7 +235,8 @@ if __name__ == "__main__":
             summary.append([d.best.MAPP, d.uerr, d.lerr])
             for ss in [d.MAPP, d.MAPPmin, d.MAPPmax, d.best.ad]:
                 log.append(r"{0:10s}".format(r"{0:.5f}".format(ss)))
-        logfile = os.path.join(working_dir, folder, "summary.txt")
+        logfile = os.path.join(working_dir, folder,
+                               "summary.txt".format(modelname))
         with open(logfile, "w") as f:
             f.write("{0:28s}{1:10s}{2:10s}{3:10s}{6:10s}{4:10s}{2:10s}{3:10s}{6:10s}{5:10s}"
                 "{2:10s}{3:10s}{6:10s}\n".format("#Spectra", "Log AGE", "LOWER",
@@ -265,10 +271,10 @@ if __name__ == "__main__":
         # plt.show(block=True)
         pp.savefig()
         plt.savefig(os.path.join(working_dir,
-                    "logs/mcmc_{0}.png".format(name)), dpi=100)
+                    "logs/mcmc_{0}_{1}.png".format(name, modelname)), dpi=100)
         plt.clf()
     pp.close()
-    summary_table(speclist())
+    summary_table(speclist(), modelname, db)
 
         
         

@@ -144,13 +144,12 @@ class Vdisp_corr_k04():
         return newlick
 
 if __name__ == "__main__":
-    workdir = os.path.join(home, "single3")
+    workdir = os.path.join(home, "single2")
     os.chdir(workdir)
     if not os.path.exists(os.path.join(workdir, "logs")):
         os.mkdir(os.path.join(workdir, "logs"))
     kinfile = "ppxf_results.dat"
     specs = np.genfromtxt(kinfile, usecols = (0,), dtype=None).tolist()
-    # specs = ["fin1_n3311inn1_s31.fits"]
     K04 = Vdisp_corr_k04()
     bands = os.path.join(tables_dir, "BANDS")
     lick_types = np.loadtxt(bands, usecols=(8,))
@@ -162,6 +161,7 @@ if __name__ == "__main__":
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
     offset = np.loadtxt(os.path.join(tables_dir,"LICK_OFFSETS.dat"),
                         usecols=(1,)).T
+    broad2lick = False
     for i, spec in enumerate(specs):
         setupfile = os.path.join(home, "single1/{0}.setup".format(spec))
         if not os.path.exists(setupfile):
@@ -171,22 +171,19 @@ if __name__ == "__main__":
         pp = pPXF(spec, velscale)
         pp.calc_arrays_emission()
         pp.sky_sub()
-        print pp.flux.mean()
-        pp.flux -= pp.sky_lin
-        print pp.weights.shape
-        print pp.flux.mean()
-        raw_input()
         if pp.ncomp > 1:
             v, s, h3, h4 = pp.sol[0]
         else:
             v, s, h3, h4 = pp.sol
         print spec, v, s
         goodindices = check_intervals(setupfile, bands, v)
+        ######################################################################
         # Broadening of the spectra to the Lick resolution
-        pp.flux = lector.broad2lick(pp.w, pp.flux, 2.1, vel=v)
-        pp.bestfit = lector.broad2lick(pp.w_log, pp.bestfit, 2.54, vel=v)
-        pp.bestfit_unbroad = lector.broad2lick(pp.w_log, pp.bestfit_unbroad,
-                                               2.54, vel=v)
+        if broad2lick:
+            pp.flux = lector.broad2lick(pp.w, pp.flux, 2.1, vel=v)
+            pp.bestfit = lector.broad2lick(pp.w_log, pp.bestfit, 2.54, vel=v)
+            pp.bestfit_unbroad = lector.broad2lick(pp.w_log, pp.bestfit_unbroad,
+                                                   2.54, vel=v)
         noise = pp.flux / pp.noise[0]
         #####################################################################
         # Make Lick indices measurements
@@ -239,5 +236,6 @@ if __name__ == "__main__":
         # Append to output
         results.append("{0:28s}".format(spec) + lick)
         results3.append("{0:28s}".format(spec) + lick3)
-    save(results, "lick_nocorr.tsv")
-    save(results3, "lick_corr.tsv")
+    res = "lickres" if broad2lick else "instres"
+    save(results3, "lick_vdcorr_{0}.tsv".format(res))
+    save(results, "lick_novdcorr_{0}.tsv".format(res))

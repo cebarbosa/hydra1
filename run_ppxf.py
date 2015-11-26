@@ -239,8 +239,8 @@ class pPXF():
             pp = pickle.load(f)
         self.__dict__ = pp.__dict__.copy()
         self.spec = spec
-        # if not os.path.exists(os.path.join(os.getcwd(), spec)):
-        #     self.spec = os.path.join(data_dir, spec)
+        if not os.path.exists(os.path.join(os.getcwd(), spec)):
+            self.spec = os.path.join(data_dir, spec)
         self.velscale = velscale
         self.w = wavelength_array(os.path.join(data_dir, spec))
         self.flux = pf.getdata(self.spec)
@@ -327,13 +327,6 @@ class pPXF():
             sky_weight = self.weights[-1]
             sky_matrix = self.matrix[:,-1]
             self.sky_poly = sky_matrix.dot(sky_weight)
-            import matplotlib.pyplot as plt
-            ax = plt.subplot(111)
-            # ax.plot(self.galaxy, "-k")
-            ax.plot(self.sky_poly, "-b")
-            # ax.plot(self.galaxy -self.sky_poly , "-y")
-            plt.pause(1)
-            plt.show(block=1)
             self.galaxy-= self.sky[0] * self.weights[-1]
             self.bestfit -= self.sky[0]* self.weights[-1]
             self.bestfit_unbroad -= self.sky[0]* self.weights[-1]
@@ -341,6 +334,9 @@ class pPXF():
                          kind="linear",
                          bounds_error=False, fill_value=0. )
             self.sky_lin = f(self.w)
+            self.flux -= self.sky_lin
+        else:
+            print "Warning: No sky templates for this run."
 
 
 def speclist():
