@@ -32,7 +32,7 @@ class Dist():
         self.bw = bw
         self.genextreme = genextreme(self.data)
         self.norm = statdist(self.data, stats.norm, "norm")
-        self.truncnorm = statdist(self.data, stats.truncnorm, "truncnorm")
+        # self.truncnorm = statdist(self.data, stats.truncnorm, "truncnorm")
         # self.gmm = gmm(self.data)
         dists = [self.genextreme, self.norm]
         idx = np.argmin([x.ad for x in dists])
@@ -81,10 +81,10 @@ class genextreme():
         self.moments = self.frozen.stats(moments="mvsk")
         self.MAPP = fmin(lambda x: -self.pdf(x),
                         self.moments[0], disp=0)[0]
-        try:
-            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
-        except:
-            self.ad = np.infty
+        # try:
+        #     self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        # except:
+        #     self.ad = np.infty
 
 class statdist():
     def __init__(self, data, dist, distname):
@@ -99,10 +99,10 @@ class statdist():
         self.moments = self.dist.stats(*self.p, moments="mvsk")
         self.MAPP = fmin(lambda x: -self.pdf(x),
                         self.moments[0], disp=0)[0]
-        try:
-            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
-        except:
-            self.ad = np.infty
+        # try:
+        #     self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        # except:
+        #     self.ad = np.infty
 
 class gmm():
     def __init__(self, data):

@@ -225,7 +225,8 @@ if __name__ == "__main__":
     mkfig1 = True
     gray = "0.8"
     ##########################################################################
-    lims = get_model_lims()
+    lims, ranges = get_model_lims(os.path.join(tables_dir,
+                          "models_thomas_2010_metal_extrapolated.dat"))
     idx = np.array([12,13,16,17,18,19,20])
     lims = lims[idx]
     # Setting the colormap properties for the scatter plots

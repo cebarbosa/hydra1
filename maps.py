@@ -1497,12 +1497,12 @@ if __name__ == "__main__":
     # make_kin_summary(loess=1)
     ####################################################
     # Produce maps for Lick indices
-    # make_lick2(loess=False, rlims=40)
+    make_lick2(loess=False, rlims=40)
     #Produce and array of maps
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)
     # make_stellar_populations_horizontal()
-    make_ssp()
+    # make_ssp()
     #####################################################
     # make_other()
     # make_sb(im="vband")

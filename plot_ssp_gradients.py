@@ -92,17 +92,10 @@ if __name__ == "__main__":
     for i in range(4):
         errs1[i] = data[i] - errs1[i]
         errs2[i] = errs2[i] - data[i]
-    #########################################################################
-    # Taking only inner region for gradients in NGC 3311
-    idx3311 = np.where(r<r_tran)[0]
-    r3311 = r[idx3311]
-    data3311 = data[:,idx3311]
-    errs_3311 = np.sqrt(errs1[:,idx3311]**2 + errs2[:,idx3311]**2)
-    mu_3311 = mu[idx3311]
     ##########################################################################
     # Set figure parameters
     gs = gridspec.GridSpec(4,5)
-    gs.update(left=0.07, right=0.985, bottom = 0.065, top=0.985, hspace = 0.14,
+    gs.update(left=0.072, right=0.985, bottom = 0.065, top=0.985, hspace = 0.14,
                wspace=0.085)
     fig = plt.figure(1, figsize = (12, 9))
     xcb = 0.21
@@ -119,10 +112,13 @@ if __name__ == "__main__":
     cmap = brewer2mpl.get_map('Blues', 'sequential', 9).mpl_colormap
     cmap = nc.cmap_discretize(cmap, 3)
     norm = Normalize(vmin=0, vmax=30)
+    err_cut = np.array([0.2, 0.7, 0.22, 0.8])
     for i, (y, y1, y2) in enumerate(zip(data, errs1, errs2)):
         ######################################################################
-        ii = np.logical_and(np.logical_and(np.isfinite(y), np.isfinite(y1)),
+        ii1 = np.logical_and(np.logical_and(np.isfinite(y), np.isfinite(y1)),
                             np.isfinite(y2))
+        ii2 = err_cut[i] > 0.5 * (y1 + y2)
+        ii = np.logical_and(ii1, ii2)
         y = y[ii]
         y1 = y1[ii]
         y2 = y2[ii]
@@ -143,10 +139,11 @@ if __name__ == "__main__":
         ######################################################################
         yc1 = yc[rc <= r_tran]
         yc2 = yc[rc > r_tran]
+        print yc1.std(), yc2.std(), yc2.std()/yc1.std()
         yc1err = ycerr[rc <= r_tran]
         yc2err = ycerr[rc > r_tran]
         # print pars[i], yc1.mean(), np.median(yc1), np.std(yc1)
-        print pars[i], yc2.mean(), np.median(yc2), np.std(yc2)
+        # print pars[i], yc2.mean(), np.median(yc2), np.std(yc2)
         ######################################################################
         # Clip values according to the models
         # for z, zerr in [[yc1, yc1err], [yc2, yc2err]]:
@@ -208,8 +205,9 @@ if __name__ == "__main__":
         ax.plot(rlodo, data_lodo[i], "^", mec="k", c="orange", ms=8, mew=0.5)
         #####################################################################
         # Draw arrows to indicate central limits
-        ax.annotate("", xy=(-1., loubser[i]), xycoords='data',
-        xytext=(-1.25, loubser[i]), textcoords='data',
+        shift = [0.0, 0, 0, 0]
+        ax.annotate("", xy=(-1+shift[i], loubser[i]), xycoords='data',
+        xytext=(-1.25 + shift[i], loubser[i]), textcoords='data',
         arrowprops=dict(arrowstyle="<-", connectionstyle="arc3", ec="r",
                         lw=1.5))
         #####################################################################
@@ -245,8 +243,8 @@ if __name__ == "__main__":
         ax2.set_ylim(ylims[i])
         ##################################################################
         # Draw arrows to indicate central limits
-        ax2.annotate("", xy=(20.3, loubser[i]), xycoords='data',
-        xytext=(19.55, loubser[i]), textcoords='data',
+        ax2.annotate("", xy=(20.3+2.8*shift[i], loubser[i]), xycoords='data',
+        xytext=(19.55+2.8*shift[i], loubser[i]), textcoords='data',
         arrowprops=dict(arrowstyle="<-", connectionstyle="arc3", ec="r",
                         lw=1.5), zorder=100)
         ######################################################################
@@ -276,10 +274,10 @@ if __name__ == "__main__":
         ######################################################################
         # Outer halo
         mask = ~np.isnan(yc2)
-        # if i == 0:
-        popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask], sigma=yc2err)
-        # else:
-        #     popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask])
+        if i in [0,2]:
+            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask], sigma=yc2err)
+        else:
+            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask])
         pcov2 = np.sqrt(np.diagonal(pcov2) + 0.01**2)
         label = r"{1:.2f}$\pm${2:.2f}".format(
                     pars2[i], round(popt2[1],2), round(pcov2[1],2),
@@ -294,7 +292,7 @@ if __name__ == "__main__":
         # ax.fill_between(x, yy - rms3(x), yy + rms3(x), edgecolor="none",
         #                 color="0.0.8", linewidth=0, alpha=0.5)
         #####################################################################
-        ax.legend(loc=3, fontsize=12, frameon=0, handlelength=2.5)
+        leg = ax.legend(loc=3, fontsize=12, frameon=0, handlelength=2.5)
         #######################################################################
         ######################################################################
         # Measuring gradients - part II
@@ -324,10 +322,10 @@ if __name__ == "__main__":
                         color="0.5", linewidth=0, alpha=0.3)
         ######################################################################
         # Outer halo
-        # if i == 0:
-        popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask], sigma=yc2err[mask])
-        # else:
-        #     popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask])
+        if i == 0:
+            popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask], sigma=yc2err[mask])
+        else:
+            popt4, pcov4 = curve_fit(f, sbc2[mask], yc2[mask])
         pcov4 = np.sqrt(np.diagonal(pcov4) + 0.01**2)
         label = r"{1:.2f}$\pm${2:.2f}".format(
                     pars2[i], round(popt4[1],2), round(pcov4[1],2),

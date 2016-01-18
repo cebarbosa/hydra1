@@ -11,7 +11,7 @@ import shutil
 
 import numpy as np
 from scipy import stats
-from scipy.interpolate import NearestNDInterpolator, LinearNDInterpolator, interpn
+from scipy.interpolate import NearestNDInterpolator, LinearNDInterpolator
 import pymc
 
 from config import *

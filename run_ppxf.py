@@ -115,8 +115,8 @@ def run_ppxf(spectra, velscale, ncomp=2, has_emission=True, mdegree=-1,
                   goodpixels=goodPixels, plot=plot, moments=moments,
                   degree=degree, mdegree=mdegree, vsyst=dv,
                   component=components, sky=sky)
-        pp.template_files = templates_names
-        pp.has_emission = has_emission
+        # pp.template_files = templates_names
+        # pp.has_emission = has_emission
         ######################################################################
         # Save to output file to keep session
         with open(pkl, "w") as f:
@@ -255,6 +255,8 @@ class pPXF():
         star_templates, self.logLam2, self.delta, miles= stellar_templates(velscale)
         ######################################################################
         # Convolve our spectra to match MILES resolution
+        FWHM_tem = 2.51
+        FWHM_spec = 2.1
         FWHM_dif = np.sqrt(FWHM_tem**2 - FWHM_spec**2)
         sigma = FWHM_dif/2.355/self.delta # Sigma difference in pixels
         ######################################################################

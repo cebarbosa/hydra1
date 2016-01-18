@@ -56,7 +56,7 @@ def get_lick_regions():
            np.loadtxt(table, usecols=(6,7))
 
 if __name__ == "__main__":
-    wdir = home + "/single3"
+    wdir = home + "/single2"
     os.chdir(wdir)
     # plt.switch_backend('macosx')
     plt.ioff()
@@ -104,8 +104,8 @@ if __name__ == "__main__":
         plt.plot(pp.w_log[pp.goodpixels], pp.bestfit[pp.goodpixels], "-r",
                  lw=1.5)
         if pp.has_emission:
-            plt.plot(pp.w_log[pp.goodpixels],
-                     pp.bestfit[pp.goodpixels] - pp.em[pp.goodpixels], "--y")
+            # plt.plot(pp.w_log[pp.goodpixels],
+            #          pp.bestfit[pp.goodpixels] - pp.em[pp.goodpixels], "--y")
             plt.plot(pp.w_log[pp.goodpixels], pp.em[pp.goodpixels], "-b", lw=1.5)
             # plt.plot(pp.w, pp.flux - pp.em_linear, "--y")
         diff = pp.galaxy[pp.goodpixels] - pp.bestfit[pp.goodpixels]

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
+"""# Constants
+c = 299792.458 # Speed of light
+FWHM_tem = 2.54 # MILES library spectra have a resolution FWHM of 2.54A.
+FWHM_spec = 2.1 # FORS2 for Hydra observations has an instrumental
+               # resolution FWHM of 4.2A.
 
 Created on 12/09/15
 

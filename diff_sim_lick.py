@@ -47,9 +47,9 @@ if __name__ == "__main__":
     cols = (0, 3, 39, 41, 47, 49, 51, 53, 55, 82)
     data = mask_slits(os.path.join(home, "single2", "results.tab"),
                       cols=cols)
-    datap = mask_slits(os.path.join(home, "p6pc", "results.tab"),
+    datap = mask_slits(os.path.join(home, "p1pc", "results.tab"),
                       cols=cols)
-    datam = mask_slits(os.path.join(home, "m6pc", "results.tab"),
+    datam = mask_slits(os.path.join(home, "m1pc", "results.tab"),
                       cols=cols)
     ##########################################################################
     # Get intersection of data
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     data[0] = np.log10(data[0]/re)
     fig = plt.figure(1, figsize=(5,10))
     gs = gridspec.GridSpec(7,1)
-    gs.update(left=0.15, right=0.975, bottom = 0.05, top=0.985, hspace = 0.09,
+    gs.update(left=0.18, right=0.975, bottom = 0.06, top=0.985, hspace = 0.09,
                wspace=0.05)
     pars = [r"H$\beta$ (\AA)", r"Fe5015 (\AA)", r"Mg $b$ (\AA)",
             r"Fe5270 (\AA)", r"Fe5335 (\AA)", r"Fe5406 (\AA)", r"Fe5709 (\AA)"]
@@ -110,10 +110,10 @@ if __name__ == "__main__":
         if i == 0:
             plt.legend(loc=0, ncol=2, prop={'size':10})
         ax.set_ylim(-2 * yw2.max(), 2 * yw2.max())
-        np.savetxt(os.path.join(tables_dir, "rms_6pc_lick_{0}.txt".format(i)),
+        np.savetxt(os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i)),
                    np.column_stack((xw, yw)))
     # plt.pause(0.001)
-    plt.savefig(os.path.join(figures_dir, "sky_pm_6pc_lick.png"))
+    plt.savefig(os.path.join(figures_dir, "sky_pm_1pc_lick.png"))
     plt.show(block=False)
 
 

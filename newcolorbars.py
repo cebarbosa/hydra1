@@ -16,7 +16,7 @@ from matplotlib.cm import ScalarMappable
 import brewer2mpl
 from scipy.interpolate import interp1d
 
-from setup_n3311 import *
+from config import *
 
 def cubelaw():
     """ Definition of the Cube Law Rainbow colormap"""

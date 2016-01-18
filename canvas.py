@@ -36,7 +36,7 @@ class CanvasImage():
         """
         self.imtype = im
         self.set_input()
-        self.D = 50. # Mpc
+        self.D = 50.7 # Mpc
         self.data = pf.getdata(self.image)
         self.header = pf.getheader(self.image)
         self.wcs = pywcs.WCS(self.header)

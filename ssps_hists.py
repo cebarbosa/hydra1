@@ -52,6 +52,13 @@ def mean_errors(table):
 
 if __name__ == "__main__":
     os.chdir(os.path.join(home, "single2"))
+    ###########################################################################
+    # Getting data from Spolaor et al. 2010
+    tab = os.path.join(tables_dir, "spolaor/c3.txt")
+    sp10 = np.loadtxt(tab, usecols=(3,5,7,5)).T
+    sp10[0] += 9.
+    sp10[3] -= 0.94 * sp10[2]
+    ##########################################################################
     # Cols: 0:R, 1:PA, 2-5: SSPs, 6:S/N, 7-10:AD test
     data = np.loadtxt("results_masked.tab", usecols=(3,4,69,72,75,84,14))
     specs = np.loadtxt("results_masked.tab", usecols=(0,), dtype=str)
@@ -85,14 +92,18 @@ if __name__ == "__main__":
     ylims = [0.5, 0.5, 0.4, 0.5]
     xlims = [[10,10.2], [-2,1], [-.3,0.5], [-1.5,1]]
     for j, (values, error) in enumerate(zip(ssps,err)):
-        print ks_2samp(values[idx_ne], values[idx_others])
-        print anderson_ksamp((values[idx_ne], values[idx_others]))
+        print parameters[j]
         header = [parameters[j], "N", "MEAN", "SIGMA", "WEIGHT"]
         # print " & ".join(header) + "\\\\"
+        vs = []
         for k, i in enumerate([idx, idx_ne, idx_others]):
             e = error[i]
             v = values[i]
             cond = np.where(e < err_cut[j])[0]
+            if k == 2:
+                np.savetxt(filenames[j].replace(".txt", "_sym.txt"),
+                           np.column_stack((specs[i][cond], v[cond])),
+                           fmt="%s")
             if k == 0:
                 bins= np.histogram(v[cond], bins=11, range=xlims[j], normed=1)[1]
                 d = gmm(v[cond])
@@ -110,6 +121,7 @@ if __name__ == "__main__":
                 ax.hist(v[cond], bins=bins, normed=False, weights=weights,
                         alpha=0.5, histtype='stepfilled', color=colors[k],
                         edgecolor="none", label=labels[k]+str(len(v[cond]))+")")
+                vs.append(v[cond])
                 ax.set_xlim(*xlims[j])
                 ax.set_xlabel(parameters[j])
                 # ax.axvline(v[cond].mean(), c=colors[k], lw=2, ls="--")
@@ -119,7 +131,7 @@ if __name__ == "__main__":
                 d.best = d.models[np.argmin(d.BIC)]
                 # d.best = d.models[1]
                 x = np.linspace(xlims[j][0], xlims[j][1], 100)
-                print np.median(v[cond])
+                # print np.median(v[cond])
                 for l, (m,w,c) in enumerate(zip(d.best.means_, d.best.weights_,
                                  d.best.covars_)):
                     y = w * normpdf(x, m, np.sqrt(c))[0]
@@ -141,7 +153,15 @@ if __name__ == "__main__":
                 ax.set_ylim(0, ylims[j])
                 #     print " & ".join([str(xx) for xx in line]) + "\\\\"
                 # print  "\multicolumn{6}{c}{- - - - - -}\\\\"
-
+        vs.append(sp10[j])
+        print len(vs[0]), len(vs[1]), len(vs[2])
+        print "NE + SYM: ", ks_2samp(vs[0], vs[1])
+        print "NE + VIRGO/FORNAX: ", ks_2samp(vs[0], vs[2])
+        print "SYM + VIRGO/FORNAX: ", ks_2samp(vs[1], vs[2])
+        print "NE + SYM: ", anderson_ksamp((vs[0], vs[1]))
+        print  "NE + VIRGO/FORNAX: ", anderson_ksamp((vs[0], vs[2]))
+        print "SYM + VIRGO/FORNAX: ", anderson_ksamp((vs[1], vs[2]))
+        print
     plt.pause(0.001)
     plt.savefig(os.path.join(os.getcwd(), "figs/hist_outer.png"))
-    plt.show()
+    # plt.show()
