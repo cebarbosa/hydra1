@@ -381,7 +381,7 @@ def make_sn():
     sn = sn[good]
     ###############################################
     # Colorbar limits
-    vmin, vmax = 5, 25
+    vmin, vmax = 10, 50
     # Set limits for the plot
     norm = Normalize(vmin, vmax)
     ###############################################
@@ -421,7 +421,7 @@ def make_sn():
     ###############################################
     # Draw the colorbar
     draw_colorbar(fig, ax, coll, ticks=np.linspace(vmin,vmax,5),
-                  cblabel=r"S/N per pixel", cbar_pos=[0.16, 0.15, 0.17, 0.04])
+                  cblabel=r"S/N [\AA$^{-1}$]", cbar_pos=[0.16, 0.15, 0.17, 0.04])
     ##############################################
     # Write labels
     xylabels(ax)
@@ -890,10 +890,10 @@ def make_lick2(loess=False, rlims=40):
         vmax = np.median(v) + 1.0 * robust_sigma
         sn_high = np.where(((~np.isnan(vector)) & (sn>=sn_thres)))[0]
         sn_low = np.delete(good, sn_high)
-        vector_low = ll.loess_2d(xall[sn_low], yall[sn_low], vector[sn_low],
-                                 frac=frac_loess)
-        vector_high = vector[sn_high]
-        good = np.hstack((sn_high, sn_low ))
+        # vector_low = ll.loess_2d(xall[sn_low], yall[sn_low], vector[sn_low],
+        #                          frac=frac_loess)
+        # vector_high = vector[sn_high]
+        # good = np.hstack((sn_high, sn_low ))
         if loess:
             v = np.hstack((vector_high, vector_low))
         else:
@@ -944,7 +944,7 @@ def make_stellar_populations(loess=False, contours="vband", dwarfs=True,
     ###############################################
     fig = plt.figure(figsize=(15, 5))
     gs = gridspec.GridSpec(1,3)
-    gs.update(left=0.051, right=0.985, bottom=0.10, top=0.98, hspace=0.06,
+    gs.update(left=0.051, right=0.985, bottom=0.115, top=0.975, hspace=0.06,
               wspace=0.06)
     cb_fmts=["%.1f","%.2f", "%.2f"]
     labels = ["(D)", "(E)", "(F)"]
@@ -1196,7 +1196,7 @@ def draw_map(fig, ax, coll, bgcolor="white", lims=40):
     return
 
 def draw_colorbar(fig, ax, coll, ticks=None, cblabel="", cbar_pos=None, 
-                  cb_fmt="%i", labelsize=16, pm=True):
+                  cb_fmt="%i", labelsize=16, pm=False):
     """ Draws the colorbar in a figure. """
     if cbar_pos is None:
         cbar_pos=[0.14, 0.13, 0.17, 0.04]
@@ -1457,8 +1457,8 @@ if __name__ == "__main__":
     #######################################################
     slits = [y for x,y in zip(canvas.slits.type, canvas.slits.ids) 
              if x in [1,3]]
-    ignore_slits = ["cen2_s24", "inn2_s21", "cen1_s22", "inn2_s34",
-                    "inn1_s22", "inn2_s27"]
+    ignore_slits = ["cen2_s24", "inn2_s21", "cen1_s22",
+                    "inn1_s22", "inn2_s27", "inn1s35"]
     slits = [x for x in slits if x not in ignore_slits]
     ####################################################
     # Positions of the slits
@@ -1469,7 +1469,7 @@ if __name__ == "__main__":
     ###############################################################
     # Create polygons
     ###############################################################
-    polygons = make_voronoi(xy, hole)
+    polygons = make_voronoi(xy)
     ##############################################################
     # Merge polygons
     ##############################################################
@@ -1490,14 +1490,14 @@ if __name__ == "__main__":
     # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
-    # make_sn()
+    make_sn()
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
     # make_kin_summary(loess=1)
     ####################################################
     # Produce maps for Lick indices
-    make_lick2(loess=False, rlims=40)
+    # make_lick2(loess=False, rlims=40)
     #Produce and array of maps
     # make_stellar_populations(loess=False, letters=0)
     # make_sp_panel(loess=False)

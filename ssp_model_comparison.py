@@ -49,11 +49,11 @@ if __name__ == "__main__":
         ax.set_ylim(ranges[i,0], ranges[i,1])
         xx = np.linspace(ranges[i,0], ranges[i,1], 100)
         ax.plot(xx, xx, "--k")
-        ax.plot(xx, xx + np.std(x - y), ":k")
+        ax.plot(xx, xx + np.sqrt(np.mean((x-y)**2)), ":k")
         ax.plot(xx, xx - np.std(x - y), ":k")
         ax.set_xlabel("{0} -- Thomas et al. 2011".format(labels[i]))
         ax.set_ylabel("{0} -- Vazdekis et al. 2015".format(labels[i]))
-        print np.std(x - y)
+        print np.sqrt(np.mean((x-y)**2))
     plt.savefig(os.path.join(figures_dir, "models_comparison.png"))
 
 

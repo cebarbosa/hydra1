@@ -111,7 +111,7 @@ if __name__ == "__main__":
     # Setting the colormap properties for the scatter plots
     cmap = brewer2mpl.get_map('Blues', 'sequential', 9).mpl_colormap
     cmap = nc.cmap_discretize(cmap, 3)
-    norm = Normalize(vmin=0, vmax=30)
+    norm = Normalize(vmin=0, vmax=45)
     err_cut = np.array([0.2, 0.7, 0.22, 0.8])
     for i, (y, y1, y2) in enumerate(zip(data, errs1, errs2)):
         ######################################################################
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         yc = np.hstack((y, l12[i]))
         ycerr1 = np.hstack((y1, l12_errs1[i]))
         ycerr2 = np.hstack((y2, l12_errs2[i]))
-        ycerr = np.maximum(ycerr1, ycerr2)
+        ycerr = np.abs(ycerr1 + ycerr2)
         ######################################################################
         # Grouping according to radius includind data from Loubser
         # This is used for gradients and histograms
@@ -186,8 +186,6 @@ if __name__ == "__main__":
 
         ax2 = plt.subplot(gs[i,2:4], xscale="linear")
         ax2.minorticks_on()
-        ii1 = np.where(sn >= 20.)[0]
-        ii2 =  np.where(sn < 20.)[0]
         ax.errorbar(r[ii], y, yerr = [y1, y2], fmt=None,
                     color=lgray, ecolor=lgray, capsize=0., zorder=1)
         ax.scatter(r[ii], y, c=sn[ii], s=50, cmap=cmap, zorder=2,
@@ -274,10 +272,10 @@ if __name__ == "__main__":
         ######################################################################
         # Outer halo
         mask = ~np.isnan(yc2)
-        if i in [0,2]:
+        if i in [2]:
             popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask], sigma=yc2err)
         else:
-            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask])
+            popt2, pcov2 = curve_fit(f, rc2[mask], yc2[mask] )
         pcov2 = np.sqrt(np.diagonal(pcov2) + 0.01**2)
         label = r"{1:.2f}$\pm${2:.2f}".format(
                     pars2[i], round(popt2[1],2), round(pcov2[1],2),

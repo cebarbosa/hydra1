@@ -80,7 +80,7 @@ if __name__ == "__main__":
     if save:
         outfile = PdfPages("ppxf_results.pdf")
     for i, spec in enumerate(specs):
-        print spec,
+        print spec
         name = spec.replace(".fits", '').replace("n3311", "").split("_")
         name = name[1] + name[2]
         name = r"{0}".format(name)
@@ -125,23 +125,23 @@ if __name__ == "__main__":
         plt.ylabel(r"Flux (Counts)", size=18)
         plt.tight_layout()
         plt.annotate("{0}".format(name.upper()), xycoords='axes fraction',
-                    xy=(0.05,0.95), size=textsize)
+                    xy=(0.05,0.94), size=textsize)
         plt.annotate(r"$\chi^2=${0:.2f}".format(pp.chi2), xycoords='axes fraction',
-                    xy=(0.05,0.88), size=textsize)
-        plt.annotate(r"S/N={0}".format(np.around(pp.sn,1)),
-                     xycoords='axes fraction', xy=(0.25,0.95), size=textsize)
+                    xy=(0.05,0.87), size=textsize)
+        plt.annotate(r"S/N={0}".format(np.around(np.sqrt(1/0.31) * pp.sn,1)),
+                     xycoords='axes fraction', xy=(0.25,0.94), size=textsize)
         plt.annotate(r"V={0} km/s".format(np.around(sol[0])),
-                     xycoords='axes fraction', xy=(0.45,0.95), size=textsize,
+                     xycoords='axes fraction', xy=(0.45,0.94), size=textsize,
                      color="r")
         plt.annotate(r"$\sigma$={0} km/s".format(np.around(sol[1])),
-                     xycoords='axes fraction', xy=(0.75,0.95), size=textsize,
+                     xycoords='axes fraction', xy=(0.75,0.94), size=textsize,
                      color="r")
         if pp.ncomp > 1:
             plt.annotate(r"V={0} km/s".format(np.around(sol2[0])),
-                         xycoords='axes fraction', xy=(0.45,0.88),
+                         xycoords='axes fraction', xy=(0.45,0.87),
                          size=textsize, color="b")
             plt.annotate(r"$\sigma$={0} km/s".format(np.around(sol2[1])),
-                         xycoords='axes fraction', xy=(0.75,0.88),
+                         xycoords='axes fraction', xy=(0.75,0.87),
                          size=textsize, color="b")
         y0, y1 = plt.ylim()
         bands_shift = bands * np.sqrt((1 + sol[0]/c)/(1 - sol[0]/c))

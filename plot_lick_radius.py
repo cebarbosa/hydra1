@@ -57,7 +57,8 @@ def mask_slits():
     data = np.loadtxt("results.tab", dtype=str)
     mask = ["inn1_s22", "inn1_s25", "inn1_s27", "out1_s19", "out1_s20",
             "out1_s21", "out1_s22","out1_s23", "out1_s24", "out1_s25",
-            "out1_s26", "inn2_s39", "cen1_s14", "cen2_s15"]
+            "out1_s26", "inn2_s39", "cen1_s14", "cen2_s15", "inn2_s34",
+            "out1_s18", "cen1_s35", "cen2_s23", "inn2_s34"]
     mask = np.array(["fin1_n3311{0}.fits".format(x) for x in mask])
     mask = data[~np.in1d(data[:,0], mask)]
     np.savetxt("results_masked.tab", mask, fmt="%s")
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     ssp = Ssp(model_table)
     restrict_pa = 0
     log = True
-    pc = 6
+    pc = 1
     r_tran = np.log10( 8.4 / re)
     plt.ioff()
     model_table = os.path.join(tables_dir, "models_thomas_2010.dat")
@@ -233,7 +234,7 @@ if __name__ == "__main__":
     cmap = brewer2mpl.get_map('Blues', 'sequential', 9).mpl_colormap
     cmap = nc.cmap_discretize(cmap, 3)
     color = cm.get_cmap(cmap)
-    norm = Normalize(vmin=0, vmax=30)
+    norm = Normalize(vmin=0, vmax=45)
     if mkfig1:
         plt.figure(1, figsize = (6, 14  ))
         gs = gridspec.GridSpec(7,1)
@@ -256,9 +257,9 @@ if __name__ == "__main__":
                         mew=2 )
             ax.scatter(r[notnans], ydata, c=sn[notnans], s=50, cmap=cmap, zorder=2,
                         lw=0.5, norm=norm)
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(0), label=r"S/N $< 10$")
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(0.5),label=r"$10\leq$ S/N $\leq 20$")
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(1.), label=r"S/N $> 20$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(0), label=r"S/N $< 15$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(0.5),label=r"$15\leq$ S/N $\leq 30$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(1.), label=r"S/N $> 30$")
             ax.errorbar(loubser12[:,0], loubser12[:,j+1],
                         yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
                         fmt="s", mec="k", capsize=0, lw=0.2,
@@ -278,7 +279,7 @@ if __name__ == "__main__":
             plt.ylabel(indices[j])
             ax.yaxis.set_major_locator(plt.MaxNLocator(5))
             if j == 0:
-                leg = ax.legend(prop={'size':10}, loc=2, ncol=2, fontsize=14,
+                leg = ax.legend(prop={'size':11}, loc=2, ncol=2, fontsize=14,
                                 scatterpoints = 1, frameon=False)
             add = 0 if j != 0 else 2
             sigma_mad = 1.48 * np.median(np.abs(ydata - np.median(ydata)))
@@ -310,7 +311,7 @@ if __name__ == "__main__":
             mask = ~np.isnan(values)
             l = lickhalo[j][mask]
             lerr = errs_halo[j][mask]
-            popth, pcovh = curve_fit(line, rhalo[mask], l)
+            popth, pcovh = curve_fit(line, rhalo[mask], l, sigma=lerr)
             pcovh = np.sqrt(np.diagonal(pcovh))
             x = np.linspace(r_tran, 0.7, 100)
             if not log:
@@ -320,7 +321,10 @@ if __name__ == "__main__":
             lll.set_dashes([10, 3])
             #################################################################
             # Ploting rms 1%
-            for p, c in [[1,"0.3"], [6, "0.1"]]:
+            for p, c in [[1,"0.3"]]:
+                tab = os.path.join(tables_dir,
+                                        "rms_{1}pc_lick_{0}.txt".format(j, p))
+                print tab
                 rms = np.loadtxt(os.path.join(tables_dir,
                                         "rms_{1}pc_lick_{0}.txt".format(j, p)),
                                  usecols=(0,1))
@@ -343,7 +347,8 @@ if __name__ == "__main__":
             # ax.axvline(x=r_tran, c="k", ls="-.")
             ##################################################################
             # Ploting rms 1%
-            for p, c in [[1,"0.1"], [6, "0.8"]]:
+            # for p, c in [[1,"0.1"], [6, "0.8"]]:
+            for p, c in [[1,"0.1"]]:
                 rms = np.loadtxt(os.path.join(tables_dir,
                                         "rms_{1}pc_lick_{0}.txt".format(j, p)),
                                  usecols=(0,1))
@@ -369,7 +374,7 @@ if __name__ == "__main__":
                 print np.abs(popt[1] - popth[1]) < m * (pcov[1]+pcovh[1]),
             print
         print "Saving new figure..."
-        plt.savefig("figs/lick_radius_{0}pc.png".format(pc), dpi=100,
+        plt.savefig("figs/lick_radius.png".format(pc), dpi=100,
                     bbox_inches="tight", transparent=False)
         for t in tex:
             print t

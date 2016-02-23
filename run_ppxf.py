@@ -190,7 +190,7 @@ def make_table(spectra, output, mc=False, nsim=200, clean=True, pkls=None):
     head = ("{0:<30}{1:<14}{2:<14}{3:<14}{4:<14}{5:<14}{6:<14}{7:<14}"
              "{8:<14}{9:<14}{10:<14}{11:<14}{12:<14}{13:<14}\n".format("# FILE",
              "V", "dV", "S", "dS", "h3", "dh3", "h4", "dh4", "chi/DOF",
-             "S/N (/ pixel)", "ADEGREE", "MDEGREE", "100*S/N/sigma"))
+             "S/N", "ADEGREE", "MDEGREE", "100*S/N/sigma"))
     results = []
     ##########################################################################
     # Initiate the output file
@@ -206,8 +206,9 @@ def make_table(spectra, output, mc=False, nsim=200, clean=True, pkls=None):
         if not os.path.exists(spec.replace(".fits", ".pkl")):
             continue
         pp = pPXF(spec, velscale, pklfile=pkl)
+        res = 0.31 # Angstrom/pixel
         pp.calc_sn()
-        sn = pp.sn
+        sn = pp.sn * np.sqrt(1/res)
         if mc:
             pp.mc_errors(nsim=nsim)
         if pp.ncomp > 1:
@@ -364,7 +365,7 @@ def speclist():
 if __name__ == '__main__':
     ##########################################################################
     # Change to data directory according to setup.py program
-    wdir = home + "/single3"
+    wdir = home + "/single2"
     os.chdir(wdir)
     spectra = speclist()
     skies = [x.replace("fin", "sky") for x in spectra]
@@ -372,8 +373,8 @@ if __name__ == '__main__':
     skies = [os.path.join(sky_dir, x) for x in skies]
     ##########################################################################
     # Go to the main routine of fitting
-    run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
-             degree=12, plot=True, data_sky=skies)
+    # run_ppxf(spectra, velscale, ncomp=1,has_emission=0, mdegree=-1,
+    #          degree=12, plot=True, data_sky=skies)
     # plt.pause(0.001)
     # plt.show(block=1)
     # for spec in spectra:

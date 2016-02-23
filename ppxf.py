@@ -741,9 +741,9 @@ class ppxf(object):
         self.error = []
         for j in range(self.ncomp):
             mp.params[p:p+2] *= velScale # Bring velocity scale back to km/s
-            self.sol.append(mp.params[p:self.moments[j]+p])
+            self.sol.append(mp.params[p:int(self.moments[j]+p)])
             mp.perror[p:p+2] *= velScale # Bring velocity scale back to km/s
-            self.error.append(mp.perror[p:self.moments[j]+p])
+            self.error.append(mp.perror[p:int(self.moments[j]+p)])
             p += self.moments[j]
         if mdegree >= 1:
             self.mpolyweights = mp.params[p:]                    
@@ -819,7 +819,7 @@ class ppxf(object):
 
         n = 2*dx*self.factor + 1
         x = np.linspace(-dx,dx,n)   # Evaluate the Gaussian using steps of 1/factor pixel
-        losvd = np.empty((n,self.ncomp,nspec))
+        losvd = np.empty((int(n),self.ncomp,nspec))
         losvd2 = losvd.copy()
         p = 0
         for j in range(self.ncomp): # loop over kinematic components
@@ -920,8 +920,8 @@ class ppxf(object):
         for j in range(ntemp):
             if self.factor == 1: # No oversampling of the template spectrum
                 for k in range(nspec):
-                    tmp[:,k] = signal.fftconvolve(self.star[:,j],losvd[:,self.component[j],k],mode='same')
-                    tmp2[:,k] = signal.fftconvolve(self.star[:,j],losvd2[:,self.component[j],k],mode='same')
+                    tmp[:,k] = signal.fftconvolve(self.star[:,j],losvd[:,int(self.component[j]),k],mode='same')
+                    tmp2[:,k] = signal.fftconvolve(self.star[:,j],losvd2[:,int(self.component[j]),k],mode='same')
             else:             # Oversample the template spectrum before convolution
                 st = ndimage.interpolation.zoom(self.star[:,j],self.factor,order=1)
                 for k in range(nspec):
@@ -1024,7 +1024,7 @@ class ppxf(object):
             tmp = 0.
             for j in range(self.ncomp): # loop over kinematic components
                 if self.moments[j] > 2:
-                    tmp += np.sum(pars[2+p:self.moments[j]+p]**2)
+                    tmp += np.sum(pars[2+p:int(self.moments[j])+p]**2)
                 p += self.moments[j]
             err += self.bias*robust_sigma(err, zero=True)*np.sqrt(tmp)
 

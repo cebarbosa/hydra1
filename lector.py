@@ -221,7 +221,8 @@ def broad2lick(wl, intens, obsres, vel=0):
         The convolved intensity 1-D array.
     
     """
-    wlick = np.array([2000., 4000., 4400., 4900., 5400., 6000., 8000.]) * np.sqrt((1 + vel/c)/(1 - vel/c))
+    wlick = np.array([2000., 4000., 4400., 4900., 5400., 6000., 8000.]) * \
+            np.sqrt((1 + vel/c)/(1 - vel/c))
     lickres = np.array([11.5, 11.5, 9.2, 8.4, 8.4, 9.8, 9.8])
     sigma_b = np.sqrt(lickres * lickres - obsres * obsres) / 2.3548
     sigmas = interp1d(wlick, sigma_b, kind="linear")(wl)

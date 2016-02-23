@@ -65,7 +65,7 @@ def read_data(tab1, tab2):
     s1 = np.array(s1)[idx1]
     return s1, data, errs
 
-def get_model_lims(table):
+def get_model_lims(table, factor=0.5):
     """ Get the range for the indices according to models. """
     modeldata = np.loadtxt(table)
     indices = modeldata[:,3:].T
@@ -74,7 +74,7 @@ def get_model_lims(table):
     lims = np.zeros((len(indices), 2))
     for i, index in enumerate(indices):
         lims[i] = [index.min(), index.max()]
-    lim_excess =  0.5 * np.abs(np.diff(lims)).T[0]
+    lim_excess = factor * np.abs(np.diff(lims)).T[0]
     lims[:,0] -= lim_excess
     lims[:,1] += lim_excess
     return lims, ranges

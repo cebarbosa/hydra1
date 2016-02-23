@@ -44,7 +44,7 @@ def match_data(s1, s2, d1):
     return d1[idx]
 
 if __name__ == "__main__":
-    cols = (0, 3, 39, 41, 47, 49, 51, 53, 55, 82)
+    cols = (0, 3, 39, 41, 47, 49, 51, 53, 55, 82, 14)
     data = mask_slits(os.path.join(home, "single2", "results.tab"),
                       cols=cols)
     datap = mask_slits(os.path.join(home, "p1pc", "results.tab"),
@@ -61,13 +61,14 @@ if __name__ == "__main__":
     datam = match_data(datam[0].tolist(), sref, datam[1:].T.astype(float)).T
     datap = match_data(datap[0].tolist(), sref, datap[1:].T.astype(float)).T
     ##########################################################################
+    sn = data[-1]
     data[0] = np.log10(data[0]/re)
     fig = plt.figure(1, figsize=(5,10))
     gs = gridspec.GridSpec(7,1)
     gs.update(left=0.18, right=0.975, bottom = 0.06, top=0.985, hspace = 0.09,
                wspace=0.05)
-    pars = [r"H$\beta$ (\AA)", r"Fe5015 (\AA)", r"Mg $b$ (\AA)",
-            r"Fe5270 (\AA)", r"Fe5335 (\AA)", r"Fe5406 (\AA)", r"Fe5709 (\AA)"]
+    pars = [r"H$\beta$ [\AA]", r"Fe5015 [\AA]", r"Mg $b$ [\AA]",
+            r"Fe5270 [\AA]", r"Fe5335 [\AA]", r"Fe5406 [\AA]", r"Fe5709 [\AA]"]
     for i,j in enumerate((1,2,3,4,5,6,7)):
         ########################################
         # Differences as function of the radius
@@ -79,6 +80,9 @@ if __name__ == "__main__":
         idxp = np.intersect1d(idx, idxp)
         diffp = datap[j][idxp] - data[j][idxp]
         diffm = datam[j][idxm] - data[j][idxm]
+        percp = diffp / data[j][idxp]
+        percm = diffm / data[j][idxm]
+        sni = sn[idx[0]]
         diff = np.hstack((diffp, diffm))
         x = np.hstack((data[0][idxp], data[0][idxm]))
         idx_sorted = x.argsort()
@@ -89,7 +93,7 @@ if __name__ == "__main__":
         x = x[(y < median + 5 * mad_std) & (y > median - 5 * mad_std)]
         y = y[(y < median + 5 * mad_std) & (y > median - 5 * mad_std)]
         xw = rolling_median(x, window=40, min_periods=1)
-        yw2 = rolling_apply(y, 40, mad, min_periods=1)
+        yw2 = rolling_std(y, 40, min_periods=1)
         yw = rolling_std(y, 40, min_periods=1)
         xw = np.hstack((xw, x.max()))
         yw = np.hstack((yw, yw[-1]))
@@ -105,13 +109,22 @@ if __name__ == "__main__":
         if i != 6:
             ax.xaxis.set_ticklabels([])
         else:
-            plt.xlabel(r"$\log R / R_e$")
+            plt.xlabel(r"$\log$ R / R$_e$")
         plt.ylabel(r"$\delta$ {0}".format(pars[i]), size=10)
         if i == 0:
             plt.legend(loc=0, ncol=2, prop={'size':10})
-        ax.set_ylim(-2 * yw2.max(), 2 * yw2.max())
-        np.savetxt(os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i)),
-                   np.column_stack((xw, yw)))
+        output = os.path.join(tables_dir, "rms_1pc_lick_{0}.txt".format(i))
+        np.savetxt(output, np.column_stack((xw, yw)))
+        isn = (18 < sni) &  (sni < 22)
+        p = np.mean((mad(percp[isn]), mad(percm[isn])))
+        d = np.mean((mad(diffp[isn]), mad(diffm[isn])))
+        diffmed =  np.max(np.abs([np.nanmedian(diffp[isn]), np.nanmedian(diffm[isn])]))
+        # print output
+        print "$\delta${0}={1:.2f} \AA ({2:.0f}%)".format(pars[i][:-5],
+                                        d, p*100.)
+        ax.set_ylim(-5 * d, 5 * d)
+        # print y[isn].mean(), y[isn].std()
+
     # plt.pause(0.001)
     plt.savefig(os.path.join(figures_dir, "sky_pm_1pc_lick.png"))
     plt.show(block=False)
