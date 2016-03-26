@@ -222,7 +222,7 @@ def loess_2d(x1, y1, z, frac=0.5, degree=1, rescale=False,
     for j in range(n):
     
         dist = np.sqrt((x - x[j])**2 + (y - y[j])**2)
-        w = np.argsort(dist)[:npoints]
+        w = np.argsort(dist)[:int(npoints)]
         distWeights = (1. - (dist[w]/dist[w[-1]])**3)**3 # tricube function distance weights
         zfit = polyfit_2d(x[w], y[w], z[w], degree, weights=distWeights)
     

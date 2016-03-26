@@ -7,6 +7,7 @@ Created on Thu Jan 30 17:49:32 2014
 Make LateX table for the population paper.
 """
 import os
+from re import split
 
 import numpy as np
 
@@ -78,6 +79,15 @@ def pm_string(pp, ppm, ppp):
             line.append(s)
         table.append(" & ".join(line))
     return table
+
+def test_output():
+    outcds = os.path.join(home, spectype, "table1.dat")
+    with open(outcds) as f:
+        table = f.readlines()
+    lims = [[262,271]]
+    for cols in lims:
+        v = [x[cols[0]-1:cols[1]-1] for x in table]
+        print v
     
 if __name__ == "__main__":
     spectype = "single2"
@@ -105,9 +115,21 @@ if __name__ == "__main__":
             if data[i,j] < lims[j,0] or data[i,j] > lims[j,1]:
                 data[i,j] = np.nan
     results = []
+    cds_table = []
     for iid, d, err, r, pa, sn, p in zip(ids, data, errs, rs, pas, sns, pstring):
-        if sn < 5:
-            continue
+        err[np.isnan(d)] = np.nan
+        cols2_4 = [r, pa, sn]
+        cols2_4 = ["{0:.1f}".format(x) for x in cols2_4]
+        cols5_11 = [item for sublist in zip(d,err) for item in sublist]
+        cols5_11 = ["{0:.2f}".format(x) for x in cols5_11]
+        cols12_14 = p.replace("$", "").replace("{", "").replace("}","").split("&")
+        cols12_14 = [x.split("_") for x in cols12_14]
+        cols12_14 = [item for sublist in cols12_14 for item in sublist]
+        cols12_14 = [x.split("^") for x in cols12_14]
+        cols12_14 = [item for sublist in cols12_14 for item in sublist]
+        ascii = cols2_4 + cols5_11 + cols12_14
+        ascii = ["{0:9s}".format(iid.replace(" ", "").strip())] + ["{0:>10s}".format(x) for x in ascii]
+        cds_table.append("".join(ascii))
         s = "{0} & {1:.1f} & {2:.1f} & {3:.1f} & ".format(iid, r, pa, sn) + \
             " & ".join(val2str(d, err)) + " & " + p
         results.append(s) 
@@ -116,3 +138,7 @@ if __name__ == "__main__":
     results.sort()
     with open(output, "w") as f:
         f.write("\\\\\n".join(results) + "\\\\")
+    output2 = os.path.join(home, spectype, "table1.dat")
+    with open(output2, "w") as f:
+        f.write("\n".join(cds_table))
+    test_output()

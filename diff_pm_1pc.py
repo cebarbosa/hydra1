@@ -112,8 +112,10 @@ if __name__ == "__main__":
             if k == 0:
                 print "$\delta${0}={1:.2f} ({2:.0f}%)".format(pars[i],
                                         d, p*100.)
+            plt.locator_params(axis='x',nbins=6)
+            plt.locator_params(axis='y',nbins=6)
     plt.pause(0.001)
-    plt.savefig(os.path.join(figures_dir, "pop_sky_pm_1pc.png"))
+    plt.savefig(os.path.join(figures_dir, "pop_sky_pm_1pc.png"), dpi=300)
     plt.show(block=True)
 
 

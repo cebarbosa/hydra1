@@ -103,8 +103,8 @@ if __name__ == "__main__":
     ##########################################################################
     nd = [3,2,2]
     color = r
-    lgray = "0.85"
-    dgray = "0.7"
+    lgray = "0.9"
+    dgray = "0.75"
     norm = Normalize(color.min(),color.max())
     ylims = [[9.7,10.2], [-2.4,1.2], [-0.5,0.75], [-3.5, 1.5]]
     tex, tex2, grad_tab1, grad_tab2 = [], [], [], []
@@ -187,15 +187,16 @@ if __name__ == "__main__":
         ax2 = plt.subplot(gs[i,2:4], xscale="linear")
         ax2.minorticks_on()
         ax.errorbar(r[ii], y, yerr = [y1, y2], fmt=None,
-                    color=lgray, ecolor=lgray, capsize=0., zorder=1)
-        ax.scatter(r[ii], y, c=sn[ii], s=50, cmap=cmap, zorder=2,
-                   lw=0.5, norm=norm)
+                    color=lgray, ecolor=lgray, capsize=0., zorder=1,
+                    elinewidth=1 )
+        ax.scatter(r[ii], y, c=sn[ii], s=60, cmap=cmap, zorder=2,
+                   lw=0.5, norm=norm, edgecolor="k")
         ######################################################################
         # Plot data for Loubser 2012
         ax.errorbar(r_l12, l12[i], yerr = [l12_errs1[i], l12_errs2[i]],
                     color="r", ecolor=lgray,
                         fmt="s", mec="k", capsize=0,
-                        alpha=1, ms=7.5, mew=0.5)
+                        alpha=1, ms=7.5, mew=0.5, elinewidth=1 )
         # ax.yaxis.set_major_locator(plt.MaxNLocator(5))
         ax.set_xlim(-1.5, 0.8)
         ######################################################################
@@ -212,16 +213,17 @@ if __name__ == "__main__":
         # Second plot: data as function of surface brightness
         #####################################################################
         ax2.errorbar(mu[ii], y, yerr = [y1, y2], fmt=None,
-                    color=lgray, ecolor=lgray, capsize=0., zorder=1)
-        ax2.scatter(mu[ii], y, c=sn[ii], s=50, cmap=cmap, zorder=2,
-                   lw=0.5, norm=norm)
+                    color=lgray, ecolor=lgray, capsize=0., zorder=1,
+                     elinewidth=1)
+        ax2.scatter(mu[ii], y, c=sn[ii], s=60, cmap=cmap, zorder=2,
+                   lw=0.5, norm=norm, edgecolors="k")
         ax2.set_xlim(19,25)
         ######################################################################
         # Plot data for Loubser 2012
         ax2.errorbar(l12_sb, l12[i], yerr = [l12_errs1[i], l12_errs2[i]],
                     color="r", ecolor=lgray,
                         fmt="s", mec="k", capsize=0,
-                        alpha=1, ms=7.5, mew=0.5)
+                        alpha=1, ms=7.5, mew=0.5, elinewidth=1 )
         ######################################################################
         ######################################################################
         # Plot data for Coccato+ 2011
@@ -258,7 +260,7 @@ if __name__ == "__main__":
         x = np.linspace(rc1.min(), r_tran, 100)
         yy = f(x, popt1[0], popt1[1])
         lll, = ax.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
-                       label=label)
+                       label=label.replace("-0.00", "0.00"))
         lll.set_dashes([10, 3, 2, 3])
         ax.annotate(r"$\Delta${0} (dex/dex)".format(
                     pars2[i], round(popt1[1],2), round(pcov1[1],2),
@@ -266,7 +268,7 @@ if __name__ == "__main__":
                      xy=(0.06,0.35), xycoords="axes fraction", color="k",
                      fontsize=12)
         ax.fill_between(x, yy - rms1(x), yy + rms1(x), edgecolor="none",
-                        color="0.1", linewidth=0, alpha=0.5)
+                        color="0.5", linewidth=0, alpha=0.3)
         # ax.fill_between(x, yy - rms3(x), yy + rms3(x), edgecolor="none",
         #                 color="0.0.8", linewidth=0, alpha=0.5)
         ######################################################################
@@ -283,10 +285,10 @@ if __name__ == "__main__":
         x = np.linspace(r_tran, rc2.max(),  100)
         yy = f(x, popt2[0], popt2[1])
         lll, = ax.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
-                       label=label)
+                       label=label.replace("-0.00", "0.00"))
         lll.set_dashes([10, 3])
         ax.fill_between(x, yy - rms1(x), yy + rms1(x), edgecolor="none",
-                        color="0.5", linewidth=0, alpha=0.5)
+                        color="0.5", linewidth=0, alpha=0.3)
         # ax.fill_between(x, yy - rms3(x), yy + rms3(x), edgecolor="none",
         #                 color="0.0.8", linewidth=0, alpha=0.5)
         #####################################################################
@@ -305,7 +307,7 @@ if __name__ == "__main__":
         x = np.linspace(sbc1.min(), mu_tran, 100)
         yy = f(x, popt3[0], popt3[1])
         lll, = ax2.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
-                       label=label)
+                       label=label.replace("-0.00", "0.00"))
         lll.set_dashes([10, 3, 2, 3])
         ax2.annotate(r"$\Delta${0} (dex/(mag '' ''))".format(
                     pars2[i], round(popt1[1],2), round(pcov1[1],2),
@@ -331,7 +333,7 @@ if __name__ == "__main__":
         x = np.linspace(mu_tran, 24.5,  100)
         yy = f(x, popt4[0], popt4[1])
         lll, = ax2.plot(x, yy, "-k", lw=1.5, alpha=0.9, zorder=1000,
-                       label=label)
+                       label=label.replace("-0.00", "0.00"))
         lll.set_dashes([10, 3])
         ax2.fill_between(x, yy - rms2(x), yy + rms2(x), edgecolor="none",
                         color="0.5", linewidth=0, alpha=0.3)
@@ -378,12 +380,12 @@ if __name__ == "__main__":
                                     range=ylims[i])
         ax3.hist(yc2, bins=bins, histtype="stepfilled",
                  orientation="horizontal", color=lgray,
-                 edgecolor="none", alpha=0.8, visible=1,
-                 label="R$>$R$_{\mbox{e}}$$")
-        ax3.hist(yc1, bins=bins, histtype="stepfilled",
+                 edgecolor=dgray, alpha=0.5, visible=1,
+                 label="R$>$R$_{\mbox{e}}$$", linewidth=1.)
+        ax3.hist(yc1, bins=bins, histtype="bar",
                  orientation="horizontal", color="b",
-                 edgecolor="none", alpha=0.5, visible=1,
-                 label="R$\leq$ R$_{\mbox{e}}$")
+                 edgecolor="b", alpha=0.5, visible=1,
+                 label="R$\leq$ R$_{\mbox{e}}$", linewidth=1.)
         leg = ax3.legend(loc=4, fontsize=12)
         leg.draw_frame(False)
         ax3.yaxis.set_ticklabels([])
@@ -396,7 +398,7 @@ if __name__ == "__main__":
     for l in tex2:
         print l + "\n"
     # plt.pause(0.0001)
-    plt.savefig("figs/ssps_radius.png", dpi=100)
+    plt.savefig("figs/ssps_radius.png", dpi=300)
     # ##########################################################################
     # # Write gradients to tables
     # with open("gradients_logr.txt", "w") as f:

@@ -394,11 +394,11 @@ def make_sn():
     # cmap = "Spectral"
     # Produces a collection of polygons with colors according to S/N values
     coll = PolyCollection(polygons_bins[good], array=sn, cmap=cmap,
-                          edgecolors='w', norm=norm)
+                          edgecolors='w', norm=norm, linewidths=1.)
     ###############################################                      
     # Initiate figure and axis for matplotlib
     fig, ax = plt.subplots(1, 1, figsize=(6.4,6), )
-    fig.subplots_adjust(left=0.09, right=0.985, bottom = 0.09, top=0.98,
+    fig.subplots_adjust(left=0.09, right=0.985, bottom = 0.092, top=0.98,
                         hspace = 0.05, wspace=0.06)
     ###############################################
     # ax.add_patch(Rectangle((-100, -100), 200, 200, facecolor="0.8", zorder=0,
@@ -431,8 +431,8 @@ def make_sn():
     ##############################################
     # Save the figure
     plt.savefig("figs/sn.pdf", dpi=100)
-    plt.savefig("figs/sn.eps", dpi=100)
-    plt.savefig("figs/sn.png", dpi=100)
+    plt.savefig("figs/sn.eps", dpi=2500, format="eps")
+    plt.savefig("figs/sn.png", dpi=300)
     return
 
 def draw_galaxies(fig, ax, write=False):
@@ -760,7 +760,7 @@ def make_kin_summary(loess=True):
                             cmap="cubelaw", norm=norm, linewidth=5)
             ax.add_collection(lc)
     nloess = "_loess" if loess else ""
-    plt.savefig("figs/kinmaps{0}.png".format(nloess), dpi=80)
+    plt.savefig("figs/kinmaps{0}.png".format(nloess), dpi=250)
     return
 
 def make_lick():
@@ -865,17 +865,17 @@ def make_lick2(loess=False, rlims=40):
     lims = [[None, None], [None, None], [None, None], [None, None],
              [None, None], [None, None], [None, None], [None, None],
              [None, None]]
-    xcb = [0.08, 0.395, .71]
+    xcb = [0.075, 0.39, .705]
     xcb = xcb + xcb
     yc1 = 0.575
     yc2 = 0.104
     ycb = [yc1, yc1, yc1, yc2, yc2, yc2]
     cmap = brewer2mpl.get_map('YlOrRd', 'sequential', 3).mpl_colormap
     cmap = nc.cmap_discretize(cmap, 6)
-    fig = plt.figure(figsize=(13.5, 9))
+    fig = plt.figure(figsize=(13.6, 9))
     gs = gridspec.GridSpec(2,3)
-    gs.update(left=0.06, right=0.985, bottom=0.07, top=0.99, hspace=0.045,
-              wspace=0.07)
+    gs.update(left=0.06, right=0.985, bottom=0.055, top=0.99, hspace=0.04,
+              wspace=0.075)
     ylabels = [1,0,0,1,0,0,0]
     xlabels = [0,0,0,1,1,1,1]
     sn_thres = 25
@@ -920,7 +920,8 @@ def make_lick2(loess=False, rlims=40):
         if i < 3:
            ax.set_xticklabels([])
     nloess = "_loess" if loess else ""
-    plt.savefig("figs/lickmaps{0}_r{1}.png".format(nloess, rlims), dpi=80)
+    plt.savefig("figs/lickmaps{0}_r{1}.eps".format(nloess, rlims), dpi=1200,
+                format="eps")
     return
 
 def make_stellar_populations(loess=False, contours="vband", dwarfs=True,
@@ -993,7 +994,7 @@ def make_stellar_populations(loess=False, contours="vband", dwarfs=True,
     else:
         app = "noloess"
     plt.savefig("figs/populations_{0}_{1}_r{0}.png".format(contours, app,
-                lims), dpi=120)
+                lims), dpi=300)
     return
 
 def make_sp_panel(loess=False):
@@ -1143,7 +1144,7 @@ def make_other():
     names = [r"vband", r"residual", r"xrays"]
     cb_label = [r"$\mu_V$ (mag arcsec$^{-2}$)", r"$\mu_V$ (mag arcsec$^{-2}$)",
                 r"X-rays (counts)"]
-    xcb = [0.08, 0.39, 0.705]
+    xcb = [0.08, 0.395, 0.71]
     ###############################################
     # Set the threshold S/N for smoothing
     # Higher values than this values are not smoothed
@@ -1175,19 +1176,82 @@ def make_other():
         plt.gca().add_patch(Rectangle((6,-38),32,12, alpha=1, zorder=1000,
                             color="w"))
         draw_colorbar(fig, ax, coll, cblabel=cb_label[i],
-                      cbar_pos=[xcb[i], 0.16, 0.09, 0.04], pm=0,
+                      cbar_pos=[xcb[i], 0.168, 0.09, 0.04], pm=0,
                       ticks=np.linspace(vmins[i], vmaxs[i], 4),
                       cb_fmt=cb_fmts[i])
         if i > 0:
             ax.set_yticklabels([])
         ax.text(0.05, 0.95, labels[i], transform=ax.transAxes,
-                fontsize=26, fontweight='bold', va='top')
-    plt.savefig("figs/other.png", dpi=120)
+                fontsize=26, fontweight='bold', va='top',
+                bbox=dict(boxstyle="square", fc="w", ec="none"))
+    plt.savefig("figs/other.png", dpi=350)
+    return
+
+def make_imgs():
+    ###############################################
+    # Details of the maps
+    names = [r"vband", r"residual", r"xrays"]
+    cb_label = [r"$\mu_V$ (mag arcsec$^{-2}$)", r"$\mu_V$ (mag arcsec$^{-2}$)",
+                r"X-rays (counts)"]
+    ###############################################
+    # Set the threshold S/N for smoothing
+    # Higher values than this values are not smoothed
+    sn_thres = [25, 25, 25]
+    ###############################################
+    fig = plt.figure(1,figsize=(5.5,5))
+    gs = gridspec.GridSpec(1,1)
+    gs.update(left=0.08, right=0.99, bottom=0.11, top=0.978, hspace=0.06,
+              wspace=0.06)
+    cb_fmts=["%.1f","%.1f", "%d"]
+    vmins = [20, 23., 65]
+    vmaxs = [24.5, 26, 125]
+    green = nc.cmap_map(lambda x: x*0.8 + 0.2, cm.get_cmap("YlGn_r"))
+    cmaps = ["gray", "cubehelix", green]
+    labels = ["(A)", "(B)", "(C)"]
+    # canvas_xrays.data = canvas_xrays.data_smooth
+    writegal = [True, False, False]
+    for i, c in enumerate([canvas, canvas_res, canvas_xrays]):
+        ax = plt.subplot(gs[0])
+        ax.minorticks_on()
+        coll = c.imshow(cmap=cmaps[i], vmin=vmins[i], vmax=vmaxs[i],
+                        aspect="equal")
+        ax.set_xlim(40,-40)
+        ax.set_ylim(-40,40)
+        xylabels(ax)
+        # draw_galaxies(fig, ax, write=writegal[i])
+        draw_contours("vband", fig, ax, c="k")
+        plt.gca().add_patch(Rectangle((5,-38),33,14, alpha=1, zorder=1000,
+                            color="w"))
+        draw_colorbar(fig, ax, coll, cblabel=cb_label[i],
+                      cbar_pos=[0.2, 0.17, 0.25, 0.04], pm=0,
+                      ticks=np.linspace(vmins[i], vmaxs[i], 4),
+                      cb_fmt=cb_fmts[i])
+        if i == 1:
+            circle = cv.circle_xy(8.4)
+            ax.plot(circle[:,0], circle[:,1], "-r", lw=3)
+            ax.plot([0,0],[8.4,40], "-r", lw=3)
+            ax.plot([40,8.4],[0,0], "-r", lw=3)
+            t1 = ax.text(0.05, 0.85, "Off-centred\nenvelope", transform=ax.transAxes,
+                    fontsize=22, fontweight='bold', va='top', color="r")
+            t1.set_bbox(dict(color='w', alpha=0.8, edgecolor='none'))
+            t2 = ax.text(0.25, 0.35, "Symmetric halo", transform=ax.transAxes,
+                    fontsize=22, fontweight='bold', va='top', color="r")
+            t2.set_bbox(dict(color='w', alpha=0.8, edgecolor='none'))
+            t3 = ax.text(0.55, 0.85, "Inner Galaxy", transform=ax.transAxes,
+                    fontsize=22, fontweight='bold', va='top', color="r")
+            t3.set_bbox(dict(color='w', alpha=0.8, edgecolor='none'))
+            ax.arrow(-8.4 * np.sqrt(2)/2, 8.4 * np.sqrt(2)/2,
+                     -20 * np.sqrt(2)/2, 20 * np.sqrt(2)/2,
+                    head_width=2, head_length=4, fc='r', ec='r',
+                     width=0.7, zorder=1000)
+        # ax.text(0.05, 0.95, labels[i], transform=ax.transAxes,
+        #         fontsize=26, fontweight='bold', va='top')
+        plt.savefig("figs/{0}.png".format(names[i]), dpi=120)
+        plt.clf()
     return
         
 def draw_map(fig, ax, coll, bgcolor="white", lims=40):
     """ Draws a collection of rectangles in a given figure/axis. """
-    ax.set_axis_bgcolor(bgcolor)
     ax.set_aspect("equal")
     ax.add_collection(coll)
     ax.minorticks_on()
@@ -1232,6 +1296,7 @@ def xylabels(ax, x=True, y=True, size=None):
 
 def draw_contours(im, fig, ax, c="k", label=True):
     """ Draw the contours of the V-band or residual image. """
+    linewidths = 1.5
     if im == "residual":
         contours = np.linspace(22, 25, 4)
         contours2 = np.linspace(22.5, 25.5, 4)
@@ -1247,12 +1312,41 @@ def draw_contours(im, fig, ax, c="k", label=True):
         contours2 = contours
         datasmooth = canvas_xrays.data_smooth
         extent = canvas_xrays.extent
-    cs = ax.contour(datasmooth, contours, 
-               extent=extent, colors=c)
-    ax.contour(datasmooth, contours2, 
-               extent=extent, colors=c, zorder=1000)
+    cs = ax.contour(datasmooth, contours,
+               extent=extent, colors=c, zorder=1, linewidths=linewidths)
+    cs2 = ax.contour(datasmooth, contours2,
+               extent=extent, colors=c, zorder=1, linewidths=linewidths)
     if label:
-        plt.clabel(cs, inline=1, fontsize=8, fmt='%.1f')
+        cls = ax.clabel(cs, inline=1, fontsize=8, fmt='%.1f')
+        # now CLS is a list of the labels, we have to find offending ones
+
+        # get limits if they're automatic
+        xmax,xmin,ymin,ymax = plt.axis()
+        ymin = -20
+        Dx = xmax-xmin
+        Dy = ymax-ymin
+
+        # check which labels are near a border
+        keep_labels = []
+        for label in cls:
+            lx,ly = label.get_position()
+            if xmin <lx<xmax and ymin<ly<ymax:
+                # inlier, redraw it later
+                keep_labels.append((lx,ly))
+
+        # delete the original lines, redraw manually the labels we want to keep
+        # this will leave unlabelled full contour lines instead of overlapping labels
+
+        for cline in cs.collections:
+            cline.remove()
+        for label in cls:
+            label.remove()
+
+        cs = ax.contour(datasmooth, contours,
+               extent=extent, colors=c, zorder=1, linewidths=linewidths)
+        cls = ax.clabel(cs, inline=1, fontsize=8, fmt='%.1f',
+                        manual=keep_labels)
+    return
 
 
 def make_maps_interp(loess=True, contours="vband", dwarfs=True,
@@ -1364,17 +1458,17 @@ def make_ssp(loess=False):
     cmaps = [nc.cmap_discretize(x, 6) for x in cmaps]
     titles = [r"age", r"total metallicity",
                 r"element abundance", r"iron metallicity"]
-    cb_label = [r"log Age (years)", r"[Z/H]", r"[$\alpha$/Fe]", r"[Fe/H]"]
+    cb_label = [r"log Age (yr)", r"[Z/H]", r"[$\alpha$/Fe]", r"[Fe/H]"]
     lims = [[None, None], [None, None], [None, None], [None, None]]
-    xcb = [0.095, 0.57]
+    xcb = [0.105, 0.57]
     xcb = xcb + xcb
-    yc1 = 0.56
-    yc2 = 0.085
+    yc1 = 0.565
+    yc2 = 0.090
     ycb = [yc1, yc1, yc2, yc2]
-    fig = plt.figure(figsize=(10.5, 10))
+    fig = plt.figure(figsize=(10.8, 10.2))
     gs = gridspec.GridSpec(2,2)
-    gs.update(left=0.065, right=0.988, bottom=0.055, top=0.985, hspace=0.03,
-              wspace=0.02)
+    gs.update(left=0.065, right=0.988, bottom=0.055, top=0.985, hspace=0.04,
+              wspace=0.018)
     ylabels = [1,0,1,0]
     xlabels = [0,0,1,1]
     sn_thres = 25
@@ -1406,7 +1500,7 @@ def make_ssp(loess=False):
         ax = plt.subplot(gs[i])
         norm = Normalize(vmin=vmin, vmax=vmax)
         coll = PolyCollection(polygons_bins[good], array=v, cmap=cmaps[i],
-                              edgecolors='w', norm=norm)
+                              edgecolors='w', norm=norm, linewidths=1)
         draw_map(fig, ax, coll)
         draw_contours("vband", fig, ax)
         plt.gca().add_patch(Rectangle((18,-36),20,10, alpha=1, zorder=100000,
@@ -1421,7 +1515,8 @@ def make_ssp(loess=False):
         if i < 2:
            ax.set_xticklabels([])
     nloess = "_loess" if loess else ""
-    plt.savefig("figs/ssps{0}.png".format(nloess), dpi=80)
+    # plt.savefig("figs/ssps{0}.eps".format(nloess), dpi=1200, format="eps")
+    plt.savefig("figs/ssps{0}.png".format(nloess), dpi=300)
     return
 
 if __name__ == "__main__":
@@ -1490,7 +1585,7 @@ if __name__ == "__main__":
     # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
-    make_sn()
+    # make_sn()
     ####################################################
     # Produce maps for all moments
     # make_kinematics()
@@ -1505,6 +1600,7 @@ if __name__ == "__main__":
     # make_ssp()
     #####################################################
     # make_other()
+    # make_imgs()
     # make_sb(im="vband")
     #####################################################
     # Make interpolated maps with LOESS

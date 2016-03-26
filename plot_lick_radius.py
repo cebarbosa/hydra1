@@ -56,9 +56,13 @@ def line(x, zp, grad ):
 def mask_slits():
     data = np.loadtxt("results.tab", dtype=str)
     mask = ["inn1_s22", "inn1_s25", "inn1_s27", "out1_s19", "out1_s20",
-            "out1_s21", "out1_s22","out1_s23", "out1_s24", "out1_s25",
-            "out1_s26", "inn2_s39", "cen1_s14", "cen2_s15", "inn2_s34",
-            "out1_s18", "cen1_s35", "cen2_s23", "inn2_s34"]
+             "out1_s21", "out1_s22","out1_s23", "out1_s24", "out1_s25",
+             "out1_s26", "inn2_s39", "cen1_s14", "cen2_s15", "out2_s22",
+            "out2_s29", ]
+    # mask = ["inn1_s22", "inn1_s25", "inn1_s27", "out1_s19", "out1_s20",
+    #         "out1_s21", "out1_s22","out1_s23", "out1_s24", "out1_s25",
+    #         "out1_s26", "inn2_s39", "cen1_s14", "cen2_s15", "inn2_s34",
+    #         "out1_s18", "cen1_s35", "cen2_s23", ]
     mask = np.array(["fin1_n3311{0}.fits".format(x) for x in mask])
     mask = data[~np.in1d(data[:,0], mask)]
     np.savetxt("results_masked.tab", mask, fmt="%s")
@@ -224,7 +228,7 @@ if __name__ == "__main__":
     # First figure, simple indices
     app = "_pa" if restrict_pa else ""
     mkfig1 = True
-    gray = "0.8"
+    gray = "0.75"
     ##########################################################################
     lims, ranges = get_model_lims(os.path.join(tables_dir,
                           "models_thomas_2010_metal_extrapolated.dat"))
@@ -239,7 +243,7 @@ if __name__ == "__main__":
         plt.figure(1, figsize = (6, 14  ))
         gs = gridspec.GridSpec(7,1)
         gs.update(left=0.15, right=0.95, bottom = 0.1, top=0.94, wspace=0.1,
-                  hspace=0.08)
+                  hspace=0.09)
         tex = []
         for j, ll in enumerate(lick):
             # print indices[j], ranges[j], ssp.fn(9.,0.12,.4)[ii[j]]
@@ -254,12 +258,15 @@ if __name__ == "__main__":
             ax.errorbar(r[notnans], ydata, yerr=lickerr[j][notnans],
                         fmt=None, color=gray, ecolor=gray, capsize=0, mec=gray,
                         ms=5.5, alpha=1, markerfacecolor="none",
-                        mew=2 )
-            ax.scatter(r[notnans], ydata, c=sn[notnans], s=50, cmap=cmap, zorder=2,
-                        lw=0.5, norm=norm)
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(0), label=r"S/N $< 15$")
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(0.5),label=r"$15\leq$ S/N $\leq 30$")
-            ax.plot(1000, 1000, "o", mew=0.8, c=color(1.), label=r"S/N $> 30$")
+                        mew=2, elinewidth=1 )
+            ax.scatter(r[notnans], ydata, c=sn[notnans], s=60, cmap=cmap, zorder=2,
+                        lw=0.5, norm=norm, edgecolor="k")
+            ax.plot(1000, 1000, "o", mew=0.8, mec="k", c=color(0),
+                    label=r"S/N $< 15$")
+            ax.plot(1000, 1000, "o", mew=0.8, mec="k", c=color(0.5),
+                    label=r"$15\leq$ S/N $\leq 30$")
+            ax.plot(1000, 1000, "o", mew=0.8, c=color(1.), mec="k",
+                    label=r"S/N $> 30$")
             ax.errorbar(loubser12[:,0], loubser12[:,j+1],
                         yerr=loubser12_errs[:,j+1], color="r", ecolor="r",
                         fmt="s", mec="k", capsize=0, lw=0.2,
@@ -333,8 +340,8 @@ if __name__ == "__main__":
                 # ax.plot(xrms, -yrms + line(xrms, popt[0], popt[1]), "-", c="0.5")
                 ax.fill_between(xrms, yrms + line(xrms, popt[0], popt[1]),
                                 line(xrms, popt[0], popt[1]) - yrms,
-                                edgecolor="none", color=c,
-                                linewidth=0, alpha=0.1)
+                                edgecolor="none", color=gray,
+                                linewidth=0, alpha=1)
             ##################################################################
             # Outer halo in bins
             # popt2, pcov2 = curve_fit(line, rbins, data_r[:,j], sigma=errs_r[:,j])
@@ -355,8 +362,8 @@ if __name__ == "__main__":
                 xrms, yrms = rms[rms[:,0]>=r_tran].T
                 ax.fill_between(xrms, yrms + line(xrms, popth[0], popth[1]),
                                 line(xrms, popth[0], popth[1]) - yrms,
-                                edgecolor="none", color=c,
-                                linewidth=0, alpha=0.5)
+                                edgecolor="none", color=gray,
+                                linewidth=0, alpha=1)
             ##################################################################
             # Draw arrows to indicate central limits
             ax.annotate("", xy=(-1.12, loubser[j]), xycoords='data',
@@ -374,7 +381,7 @@ if __name__ == "__main__":
                 print np.abs(popt[1] - popth[1]) < m * (pcov[1]+pcovh[1]),
             print
         print "Saving new figure..."
-        plt.savefig("figs/lick_radius.png".format(pc), dpi=100,
+        plt.savefig("figs/lick_radius.png".format(pc), dpi=300,
                     bbox_inches="tight", transparent=False)
         for t in tex:
             print t

@@ -81,10 +81,10 @@ class genextreme():
         self.moments = self.frozen.stats(moments="mvsk")
         self.MAPP = fmin(lambda x: -self.pdf(x),
                         self.moments[0], disp=0)[0]
-        # try:
-        #     self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
-        # except:
-        #     self.ad = np.infty
+        try:
+            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        except:
+            self.ad = np.infty
 
 class statdist():
     def __init__(self, data, dist, distname):
@@ -99,10 +99,10 @@ class statdist():
         self.moments = self.dist.stats(*self.p, moments="mvsk")
         self.MAPP = fmin(lambda x: -self.pdf(x),
                         self.moments[0], disp=0)[0]
-        # try:
-        #     self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
-        # except:
-        #     self.ad = np.infty
+        try:
+            self.ad =  stats.anderson_ksamp([self.sample, self.data])[0]
+        except:
+            self.ad = np.infty
 
 class gmm():
     def __init__(self, data):
@@ -133,10 +133,11 @@ def hist2D(dist1, dist2, ax):
     ax.imshow(np.rot90(Z), cmap="gray_r", extent=extent, aspect="auto",
               interpolation="spline16")
     # plt.hist2d(dist1.data, dist2.data, bins=40, cmap="gray_r")
-    plt.axvline(dist1.MAPP, c="r", ls="--")
-    plt.axhline(dist2.MAPP, c="r", ls="--")
+    plt.axvline(dist1.MAPP, c="r", ls="--", lw=1.5)
+    plt.axhline(dist2.MAPP, c="r", ls="--", lw=1.5)
     plt.tick_params(labelsize=10)
     ax.minorticks_on()
+    plt.locator_params(axis='x',nbins=10)
     return
 
 def summary_table(specs, modelname, db):
@@ -199,15 +200,16 @@ if __name__ == "__main__":
         for i, d in enumerate(dists):
             weights = np.ones_like(d.data)/len(d.data)
             ax = plt.subplot(3,3,(4*i)+1)
-            plt.tick_params(labelsize=10)
-            N, bins, patches = plt.hist(d.data, color="w",
-                                        ec="w", bins=30, range=tuple(lims[i]),
-                                        normed=True)
+            # plt.tick_params(labelsize=10)
+            N, bins, patches = plt.hist(d.data, color="b",ec="k", bins=30,
+                range=tuple(lims[i]), normed=True, edgecolor="k",
+                                        histtype='bar',linewidth=1.)
             fracs = N.astype(float)/N.max()
             norm = Normalize(-.2* fracs.max(), 1.5 * fracs.max())
             for thisfrac, thispatch in zip(fracs, patches):
                 color = cm.gray_r(norm(thisfrac))
                 thispatch.set_facecolor(color)
+                thispatch.set_edgecolor("w")
             x = np.linspace(d.data.min(), d.data.max(), 100)
             tot = np.zeros_like(x)
             # for m,w,c in zip(d.gmm.best.means_, d.gmm.best.weights_,
@@ -221,12 +223,13 @@ if __name__ == "__main__":
             # print pdf_individual
             ylim = ax.get_ylim()
             plt.plot(x, d.best.pdf(x), "-r", label="AD = {0:.1f}".format(
-                d.best.ad), lw=2.5, alpha=0.7)
+                d.best.ad), lw=1.5, alpha=0.7)
             ax.set_ylim(ylim)
             # plt.legend(loc=2, prop={'size':8})
-            plt.axvline(d.best.MAPP, c="r", ls="--")
+            plt.axvline(d.best.MAPP, c="r", ls="--", lw=1.5)
             plt.tick_params(labelright=True, labelleft=False, labelsize=10)
             plt.xlim(d.lims)
+            plt.locator_params(axis='x',nbins=10)
             if i < 2:
                 plt.setp(ax.get_xticklabels(), visible=False)
             else:
@@ -250,7 +253,7 @@ if __name__ == "__main__":
         ax = plt.subplot(3,3,7)
         hist2D(ages, alpha, ax)
         plt.ylabel(r"[$\mathregular{\alpha}$ / Fe]")
-        plt.xlabel("log Age (Gyr)")
+        plt.xlabel("log Age (yr)")
         ax = plt.subplot(3,3,8)
         plt.xlabel("[Z/H]")
         hist2D(metal, alpha, ax)
@@ -271,7 +274,7 @@ if __name__ == "__main__":
         # plt.show(block=True)
         pp.savefig()
         plt.savefig(os.path.join(working_dir,
-                    "logs/mcmc_{0}_{1}.png".format(name, modelname)), dpi=100)
+                    "logs/mcmc_{0}_{1}.png".format(name, modelname)), dpi=300)
         plt.clf()
     pp.close()
     summary_table(speclist(), modelname, db)

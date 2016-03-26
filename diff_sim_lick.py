@@ -122,8 +122,10 @@ if __name__ == "__main__":
         # print output
         print "$\delta${0}={1:.2f} \AA ({2:.0f}%)".format(pars[i][:-5],
                                         d, p*100.)
-        ax.set_ylim(-5 * d, 5 * d)
+        ax.set_ylim(-3 * d, 3 * d)
         # print y[isn].mean(), y[isn].std()
+        plt.locator_params(axis='x',nbins=6)
+        plt.locator_params(axis='y',nbins=6)
 
     # plt.pause(0.001)
     plt.savefig(os.path.join(figures_dir, "sky_pm_1pc_lick.png"))

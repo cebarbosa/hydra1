@@ -63,7 +63,7 @@ if __name__ == "__main__":
     save = True
     block = False
     specs= speclist()
-    # specs = "fin1_n3311out2_s36.fits"
+    specs = ["fin1_n3311cen1_s27.fits", "fin1_n3311cen2_s37.fits"]
     # Workaround to deal with cases where you have only one object in the file
     if isinstance(specs, str):
         specs = [specs]
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             if j in [14,15]:
                 continue
             plt.fill_between([lamb1, lamb2], [y0, y0], [y1, y1], color="0.9")
-        plt.savefig("logs/ppxf_{0}.png".format(name), dpi=100)
+        plt.savefig("logs/ppxf_{0}.png".format(name), dpi=300)
         plt.pause(0.001)
         plt.show(block=block)
         if save:

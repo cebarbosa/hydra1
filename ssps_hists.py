@@ -63,6 +63,8 @@ if __name__ == "__main__":
     data = np.loadtxt("results_masked.tab", usecols=(3,4,69,72,75,84,14))
     specs = np.loadtxt("results_masked.tab", usecols=(0,), dtype=str)
     sn = np.loadtxt("results_masked.tab", usecols=(14,))
+
+    #######################
     # Calculating maximum errors
     err = mean_errors("results_masked.tab")
     err_cut = np.array([0.2, 0.7, 0.22, 0.8])
@@ -81,12 +83,12 @@ if __name__ == "__main__":
     ssps = data[:,2:6].T
     sn = data[:,6]
     ads = data[:,7:].T
-    parameters = [r" log Age (Gyr)", "[Z/H]", r"[$\alpha$/Fe]", "[Fe/H]"]
+    parameters = [r" log Age (yr)", "[Z/H]", r"[$\alpha$/Fe]", "[Fe/H]"]
     filenames = ["age_dist.txt", "metal_dist.txt", "alpha_dist.txt",
                  "iron_dist.txt"]
     colors = ["w", "r", "gray"]
-    labels = ["All", "Off-Centered \nEnvelope (N=", "Symmetric Halo\n(N="]
-    tablab = ["All", "Off-Centered Envelope", "Symmetric Halo"]
+    labels = ["All", "Off-Centred \nEnvelope (N=", "Symmetric Halo\n(N="]
+    tablab = ["All", "Off-Centred Envelope", "Symmetric Halo"]
     fig = plt.figure(1, figsize=(7,7))
     plt.subplots_adjust(bottom=0.08, right=0.98, top=0.98, left=0.1)
     ylims = [0.5, 0.5, 0.4, 0.5]
@@ -118,9 +120,10 @@ if __name__ == "__main__":
                 plt.locator_params(nbins=5)
                 ax.minorticks_on()
                 weights = np.ones_like(v[cond])/float(len(v[cond]))
+                corr = [0,0,-1]
                 ax.hist(v[cond], bins=bins, normed=False, weights=weights,
                         alpha=0.5, histtype='stepfilled', color=colors[k],
-                        edgecolor="none", label=labels[k]+str(len(v[cond]))+")")
+                        edgecolor="none", label=labels[k]+str(len(v[cond])+corr[k])+")")
                 vs.append(v[cond])
                 ax.set_xlim(*xlims[j])
                 ax.set_xlabel(parameters[j])
@@ -163,5 +166,5 @@ if __name__ == "__main__":
         print "SYM + VIRGO/FORNAX: ", anderson_ksamp((vs[1], vs[2]))
         print
     plt.pause(0.001)
-    plt.savefig(os.path.join(os.getcwd(), "figs/hist_outer.png"))
+    plt.savefig(os.path.join(os.getcwd(), "figs/hist_outer.png"), )
     # plt.show()
