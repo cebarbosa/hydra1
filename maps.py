@@ -1184,7 +1184,8 @@ def make_other():
         ax.text(0.05, 0.95, labels[i], transform=ax.transAxes,
                 fontsize=26, fontweight='bold', va='top',
                 bbox=dict(boxstyle="square", fc="w", ec="none"))
-    plt.savefig("figs/other.png", dpi=350)
+    plt.savefig("figs/other.png")
+
     return
 
 def make_imgs():
