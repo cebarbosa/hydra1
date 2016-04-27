@@ -24,7 +24,7 @@ def voronoi_polygons(points):
         vertex_graph[r].add(l)
         vertex_graph[l].add(r)
     
-    # Caululate cells
+    # Calculate cells
     def cell(point):
         if point not in point_in_triangles:
             return None

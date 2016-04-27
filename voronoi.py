@@ -29,7 +29,7 @@ Calculate Delaunay triangulation and the Voronoi polygons for a set of
 #
 #  Python code refactoring by mozman
 #  April, 2010
-
+from __future__ import division
 import math
 
 __all__ = ['voronoi']

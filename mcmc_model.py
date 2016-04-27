@@ -80,8 +80,8 @@ def get_model_lims(table, factor=0.5):
     return lims, ranges
 
 if __name__ == "__main__":
-    lims = [[0.1, 15.], [-2.25, 0.67], [-0.3, 0.5]]
-    model_table = os.path.join(tables_dir, "MILESII.txt")
+    lims = [[0.1, 15.], [-2.25, 0.9], [-0.3, 0.5]]
+    model_table = os.path.join(tables_dir, "models_thomas_2010_metal_extrapolated.dat")
     db = "2" if model_table.endswith("MILESII.txt") else ""
     lims, ranges = get_model_lims(model_table)
     # model_table_err = os.path.join(tables_dir, "tmj_errors.dat")
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                               upper=ranges[2,1])
     working_dir = os.path.join(home, "single2")
     os.chdir(working_dir)
-    spectra, data, errs = read_data("lick_vdcorr_instres.tsv",
+    spectra, data, errs = read_data("lick_corr.tsv",
                                     "mc_lick_nsim400.txt")
     outtable = "ages_Z_alpha.tsv"
     for i, (spec, obsdata, obserr) in enumerate(zip(spectra, data, errs)):
@@ -107,6 +107,9 @@ if __name__ == "__main__":
              if obsdata[idx] <= lims[idx,0] or  obsdata[idx] > lims[idx,1]:
                  obsdata[idx] = np.nan
         ######################################################################
+        print obsdata
+        print obserr
+        raw_input()
         dbname = spec.replace(".fits", "_db{0}".format(db))
         dbfolder = os.path.join(working_dir, dbname)
         if os.path.exists(dbfolder):

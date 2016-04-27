@@ -231,6 +231,49 @@ def broad2lick(wl, intens, obsres, vel=0):
         intens2D[i] = gaussian_filter1d(intens2D[i], sigmas[i], 
                       mode="constant", cval=0.0)
     return intens2D.sum(axis=0)
+
+def broad2lick2(wl, intens, obsres, vel=0):
+    """ Convolve spectra to Lick resolution.
+
+    Broad a given spectra to the Lick system resolution. As the resolution
+    in the Lick system varies as function of the wavelenght, we use the
+    interpolated values from Worthey and Ottaviani 1997.
+
+    ================
+    Input parameters
+    ================
+    wl: array_like
+        Wavelenght 1-D array in Angstroms.
+
+    intens: array_like
+        Intensity 1-D array of Intensity, in arbitrary units. The lenght has
+        to be the same as wl.
+
+    obsres: float
+        Value of the observed resolution Full Width at Half Maximum (FWHM) in
+        Angstroms.
+
+    vel: float
+        Recession velocity of the measured spectrum.
+
+    =================
+    Output parameters
+    =================
+    array_like
+        The convolved intensity 1-D array.
+
+    """
+    dw = wl[1] - wl[0]
+    wlick = np.array([2000., 4000., 4400., 4900., 5400., 6000., 8000.]) * \
+            np.sqrt((1 + vel/c)/(1 - vel/c))
+    lickres = np.array([11.5, 11.5, 9.2, 8.4, 8.4, 9.8, 9.8])
+    sigma_b = np.sqrt(lickres * lickres - obsres * obsres) / 2.3548 / dw
+    sigmas = interp1d(wlick, sigma_b, kind="linear")(wl)
+    intens2D = np.diag(intens)
+    for i in range(len(sigmas)):
+        intens2D[i] = gaussian_filter1d(intens2D[i], sigmas[i],
+                      mode="constant", cval=0.0)
+    return intens2D.sum(axis=0)
     
 if __name__ == "__main__":
     pass

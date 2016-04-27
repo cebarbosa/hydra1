@@ -113,6 +113,8 @@ class CanvasImage():
     def draw_slits(self, ax, slit_type=1, fc="none", ec="k",
                    amp=1., ignore=None):
         """ Draw slits of a given a numerical type. """
+        if ignore is None:
+            ignore = []
         ids = np.where(self.slits.type == slit_type)[0]
         rects = amp * self.calc_vertices(self.slits.x[ids], self.slits.y[ids],
                                    self.slits.w[ids], self.slits.l[ids], 
@@ -253,7 +255,7 @@ class Slitlets():
         self.set_arrays()
     
     def load_files(self):
-        fldr = os.path.join(tables_dir,"reftables1")
+        fldr = os.path.join(tables_dir,"reftables2")
         files = [os.path.join(fldr, x) for x in os.listdir(fldr)]
         table = []
         for line in fileinput.input(files):

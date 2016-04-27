@@ -13,6 +13,7 @@ import pickle
 import numpy as np
 import pyfits as pf
 from scipy.interpolate import NearestNDInterpolator as interpolator
+from scipy.interpolate import interp1d
 
 from config import *
 import lector as lector
@@ -157,11 +158,11 @@ if __name__ == "__main__":
     header = "# Spectra\t" + "\t".join(lick_indices)
     # Initiating outputss
     results, results_err = [header], [header]
-    results3, results3_err = [header], [header]
+    results5, results5_err = [header], [header]
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
     offset = np.loadtxt(os.path.join(tables_dir,"LICK_OFFSETS.dat"),
                         usecols=(1,)).T
-    broad2lick = False
+    broad2lick = True
     for i, spec in enumerate(specs):
         setupfile = os.path.join(home, "single1/{0}.setup".format(spec))
         if not os.path.exists(setupfile):
@@ -178,12 +179,23 @@ if __name__ == "__main__":
         print spec, v, s
         goodindices = check_intervals(setupfile, bands, v)
         ######################################################################
+        # Check problem with broadening
+        bf = interp1d(pp.w_log, pp.bestfit, bounds_error=False,
+                      fill_value="extrapolate")
+        bestfit = bf(pp.w)
+        bfu = interp1d(pp.w_log, pp.bestfit_unbroad, bounds_error=False,
+                      fill_value="extrapolate")
+        bestfitunb = bfu(pp.w)
+        ######################################################################
         # Broadening of the spectra to the Lick resolution
         if broad2lick:
             pp.flux = lector.broad2lick(pp.w, pp.flux, 2.1, vel=v)
             pp.bestfit = lector.broad2lick(pp.w_log, pp.bestfit, 2.54, vel=v)
             pp.bestfit_unbroad = lector.broad2lick(pp.w_log, pp.bestfit_unbroad,
                                                    2.54, vel=v)
+            flux = lector.broad2lick2(pp.w, pp.flux, 2.1, vel=v)
+            bestfit = lector.broad2lick2(pp.w, bestfit, 2.54, vel=v)
+            bestfitunb = lector.broad2lick2(pp.w, bestfitunb, 2.54, vel=v)
         noise = pp.flux / pp.noise[0]
         #####################################################################
         # Make Lick indices measurements
@@ -203,6 +215,21 @@ if __name__ == "__main__":
                                         bands, vel = v, cols=(0,8,2,3,4,5,6,7),
                                         keeplog=0, title=spec)
         ####################################################################
+        # Measure in new specs
+        noise2 = pp.bestfit / pp.noise[0]
+        lnew, tmp = lector.lector(pp.w, flux-pp.em_linear, noise, bands,
+                         vel = v, cols=(0,8,2,3,4,5,6,7),
+                         keeplog=0, output="logs/lick_{0}".format(
+                         spec.replace(".fits", ".pdf")), title=spec)
+        lbf, tmp = lector.lector(pp.w, bestfit-pp.em_linear, noise, bands,
+                         vel = v, cols=(0,8,2,3,4,5,6,7),
+                         keeplog=0, output="a1.pdf", title=spec)
+        noise3 = pp.bestfit_unbroad / pp.noise[0]
+        lbfu, tmp = lector.lector(pp.w, bestfitunb-pp.em_linear, noise,
+                                        bands, vel = v, cols=(0,8,2,3,4,5,6,7),
+                                        keeplog=0, title=spec)
+        ####################################################################
+        igood = np.array([12,13,16,17,18,19,20])
         # Removing bad indices
         lick *= goodindices
         lickerrs *= goodindices
@@ -222,20 +249,25 @@ if __name__ == "__main__":
         ######################################################################
         lick4 = K04(lick, s, h3, h4)
         ######################################################################
+        # New correction
+        lick5, lickerrs5 = correct_indices(lnew, lickerrs, lbfu, lbf,
+                                         lick_types)
+        ######################################################################
         # Offset correction
         lick += offset
         lick2 += offset
         lick3 += offset
         lick4 += offset
+        lick5 += offset
         ######################################################################
         # Convert to string
         ######################################################################
         lick = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick])
         lick2 = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick2])
-        lick3 = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick3])
+        lick5 = "".join(["{0:14}".format("{0:.5f}".format(x)) for x in lick5])
         # Append to output
         results.append("{0:28s}".format(spec) + lick)
-        results3.append("{0:28s}".format(spec) + lick3)
+        results5.append("{0:28s}".format(spec) + lick5)
     res = "lickres" if broad2lick else "instres"
-    save(results3, "lick_vdcorr_{0}.tsv".format(res))
+    save(results5, "lick_vdcorr_{0}.tsv".format(res))
     save(results, "lick_novdcorr_{0}.tsv".format(res))

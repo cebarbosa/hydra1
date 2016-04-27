@@ -162,7 +162,7 @@ if __name__ == "__main__":
     os.chdir(working_dir)
     plt.ioff()
     specs = speclist()
-    specs = ["fin1_n3311cen1_s23.fits", "fin1_n3311cen1_s30.fits"]
+    # specs = ["fin1_n3311cen1_s23.fits", "fin1_n3311cen1_s30.fits"]
     db = ""
     modelname = "miles" if db == "2" else "thomas"
     dirs = [x.replace(".fits", "_db{0}".format(db)) for x in specs]
