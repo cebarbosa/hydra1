@@ -27,8 +27,11 @@ def make_tex_table():
     ##########################################################################
     # Get location of the slits
     coords = get_coords(specs)
+    # Version with astropy
     ra = [str(x) for x in Angle(coords[:,0], unit=units.hour)]
     dec = [str(x) for x in Angle(coords[:,1], unit=units.degree)]
+    # Version without astropy
+    # ra, dec = coords.T
     x,y = get_positions(specs).T
     r = np.sqrt(x*x + y*y)
     pa = np.rad2deg(np.arctan2(x, y))
