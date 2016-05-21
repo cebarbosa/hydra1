@@ -483,8 +483,11 @@ def make_kinematics():
     names = [r"vel", r"sigma", r"h3", r"h4"]
     cb_label = [r"V$_{\rm LOS}$ (km/s)", r"$\sigma_{\rm LOS}$ (km/s)",
                 r"$h_3$", r"$h_4$"]
+    ##########################################################################
+    # Limits of the maps
     lims = [[3750,4000], [150,500], [-0.08, 0.08], [-0.15, 0.15] ]
-    xcb = [0.068, 0.385, 0.705]
+    ##########################################################################
+    xcb = [0.068, 0.385, 0.705] # Position of colorbars
     ###############################################
     # Set the threshold S/N for smoothing
     # Higher values than this values are not smoothed
@@ -617,7 +620,7 @@ if __name__ == "__main__":
     # make_sn()
     ####################################################
     # Produce maps for all moments
-    make_kinematics()
+    make_kinematics() # New routine
     # make_kin_summary(loess=0, contours="vband", format="png",
     #                  sn_lims=[0.2,1.,2,2], sn_loess=[20,20,1000,1000],
     #                 sn_sig=True)
