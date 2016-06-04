@@ -18,7 +18,7 @@ from astropy import units
 from config import *
 import canvas as cv
 
-def make_tex_table():
+def make_tex_table(usepoly=False):
     workdir = os.path.join(home, "single2")
     os.chdir(workdir)
     table = "ppxf_results.dat"
@@ -34,7 +34,9 @@ def make_tex_table():
     # ra, dec = coords.T
     x,y = get_positions(specs).T
     r = np.sqrt(x*x + y*y)
+    r = np.array(["{0:.1f}".format(x) for x in r])
     pa = np.rad2deg(np.arctan2(x, y))
+    pa = np.array(["{0:.1f}".format(x) for x in pa])
     ##########################################################################
     # Initialize final array
     out = np.column_stack((ids, ra, dec, r, pa))
@@ -44,9 +46,11 @@ def make_tex_table():
     for i in range(4):
         out = np.column_stack((out, make_str_err(data[:,i], errs[:,i])))
     sn = np.array(["{0:.1f}".format(x) for x in data[:,4]])
-    adegree = np.array(["{0:.0f}".format(x) for x in data[:,5]])
-    mdegree = np.array(["{0:.0f}".format(x) for x in data[:,6]])
-    out = np.column_stack((out, sn, adegree, mdegree))
+    out = np.column_stack((out, sn))
+    if usepoly:
+        adegree = np.array(["{0:.0f}".format(x) for x in data[:,5]])
+        mdegree = np.array(["{0:.0f}".format(x) for x in data[:,6]])
+        out = np.column_stack((out, adegree, mdegree))
     out = [" & ".join(x) + "\\\\" for x in out]
     with open("kinematics.tex", "w") as f:
         f.write("\n".join(out))
