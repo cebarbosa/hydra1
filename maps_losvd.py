@@ -474,7 +474,7 @@ def draw_contours(im, fig, ax, c="k", label=True):
         plt.clabel(cs, inline=1, fontsize=8, fmt='%.1f')
 
 def make_kinematics():
-    """ Make maps for kinematis individually. """
+    """ Make maps for kinematics individually. """
     # Read data values for vel, sigma, h3, h4
     data = np.loadtxt(outtable, usecols=(5,7,9,11)).T
     xall, yall, sn = np.loadtxt(outtable, usecols=(1,2,14,)).T
@@ -526,7 +526,7 @@ def make_kinematics():
             ax = plt.subplot(gs[j])
             norm = Normalize(vmin=vmin, vmax=vmax)
             coll = PolyCollection(polygons_bins[good], array=vs[j],
-                                  cmap="Spectral_r",
+                                  cmap="cubelaw",
                                   edgecolors='w', norm=norm, linewidths=0.4)
             draw_map(fig, ax, coll)
             draw_contours(contours[j], fig, ax)
@@ -543,17 +543,35 @@ def make_kinematics():
             #####################################################
             if i > 1:
                 continue
-            for tab in [tab1a, tab1b, tab2]:
+            bc = ["g", "g", "b", "b"]
+            for k, tab in enumerate([tab1a, tab1b, tab2[4:], tab2[:4]]):
                 norm = Normalize(vmin=vmin, vmax=vmax)
-                points = np.array([tab[:,0], tab[:,1]]).T.reshape(-1, 1, 2)
+                idx = np.argsort(tab[:,0])
+                points = np.array([tab[:,0][idx], tab[:,1][idx]]).T.reshape(-1, 1, 2)
                 segments = np.concatenate([points[:-1], points[1:]],
                                           axis=1)
                 lc = LineCollection(segments, array=tab[:,i+2],
-                                cmap="cubelaw", norm=norm, linewidth=5)
+                                cmap="cubelaw", norm=norm, lw=5)
                 ax.add_collection(lc)
-        plt.savefig("figs/{0}.pdf".format(names[i]))
+                add_borders(ax, points, c=bc[k])
+        # plt.savefig("figs/{0}.pdf".format(names[i]))
         plt.savefig("figs/{0}.png".format(names[i]))
-        plt.savefig("figs/{0}.eps".format(names[i]), fmt="eps")
+        # plt.savefig("figs/{0}.eps".format(names[i]), fmt="eps")
+
+def add_borders(ax, points, c="w"):
+    """ Add borders around long slits. """
+    x0, y0 =  points[0,0].T
+    x1, y1 =  points[-1,0].T
+    l = 0.7
+    theta = np.tan((y1 - y0) / (x1 - x0))
+    dx, dy = np.abs(l * np.sin(theta)), np.abs(l * np.cos(theta))
+    p1 = (x0 - np.sign(x1 - x0) * dx, y0 + np.sign(y1 - y0) * dy)
+    p2 = (x1 -  np.sign(x1 - x0) *dx, y1 + np.sign(y1 - y0) * dy)
+    p3 = (x1 +  np.sign(x1 - x0) *dx, y1 - np.sign(y1 - y0) * dy)
+    p4 = (x0 +  np.sign(x1 - x0) *dx, y0 - np.sign(y1 - y0) * dy)
+    borders = np.array([p1, p2, p3, p4, p1]).T
+    ax.plot(borders[0], borders[1], "-{0}".format(c), lw=1)
+    return
 
 if __name__ == "__main__":
     plt.ioff()
