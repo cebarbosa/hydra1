@@ -124,7 +124,7 @@ def merge_polys():
     return np.array(newpolys)
         
 def merge_tables():
-    files = ["ppxf_results.dat", "lick_vdcorr_lickres.tsv", "populations_miles.txt",
+    files = ["ppxf_results.dat", "lick_vdcorr_instres.tsv", "populations_miles.txt",
              "mc_lick_nsim400.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
@@ -1585,7 +1585,7 @@ if __name__ == "__main__":
     ####################################################
     #Make find chart
     ####################################################
-    find_chart()
+    # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
     # make_sn()

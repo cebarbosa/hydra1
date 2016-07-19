@@ -162,7 +162,7 @@ if __name__ == "__main__":
     bcorr = BroadCorr(os.path.join(tables_dir, "lickcorr_m.txt"))
     offset = np.loadtxt(os.path.join(tables_dir,"LICK_OFFSETS.dat"),
                         usecols=(1,)).T
-    broad2lick = True
+    broad2lick = False
     for i, spec in enumerate(specs):
         setupfile = os.path.join(home, "single1/{0}.setup".format(spec))
         if not os.path.exists(setupfile):
@@ -186,6 +186,7 @@ if __name__ == "__main__":
         bfu = interp1d(pp.w_log, pp.bestfit_unbroad, bounds_error=False,
                       fill_value="extrapolate")
         bestfitunb = bfu(pp.w)
+        flux = pp.flux
         ######################################################################
         # Broadening of the spectra to the Lick resolution
         if broad2lick:

@@ -97,11 +97,8 @@ def get_coords(specs):
 def merge_tables():
     """ Merge all tables into a single file to be used consistently for all
         the maps.
-        The version in this file is abridged to include only kinematic data.
         """
-    filename = "ppxf_all.dat"
-#    files = ["ppxf_results2.dat", "lick2.tsv", "ages_Z_alpha2.tsv",
-#             "lick_errs2.tsv"]
+    filename = "ppxf_results.dat"
     s1 = np.genfromtxt(filename, usecols=(0,), dtype=None).tolist()
     sref = s1[:]
     sref.sort()
@@ -109,12 +106,6 @@ def merge_tables():
     r = np.sqrt(x*x + y*y)
     pa = np.rad2deg(np.arctan2(x, y))
     data1 = np.loadtxt(filename, usecols=np.arange(1,11))
-    ##########################################################################
-    # Account for difference in resolution
-    # Not used anymore because the resolution is now matched in pPXF
-    # fwhm_dif = (2.5 - 2.1) * c / 5500. / 2.3548
-    # data1[:,2] = np.sqrt(data1[:,2]**2 - fwhm_dif**2)
-    ##########################################################################
     data1 = match_data(s1, sref, data1)
     results = np.column_stack((sref, x, y, r, pa, data1))
     header = ['FILE', "X[kpc]", "Y[kpc]",
@@ -576,12 +567,17 @@ def add_borders(ax, points, c="w"):
 if __name__ == "__main__":
     plt.ioff()
     ####################################################
+    # Switch to data folder
+    workdir = os.path.join(home, "single2")
+    os.chdir(workdir)
+    ####################################################
+    # Create folder for output files
+    ####################################################
+    if not os.path.exists("figs"):
+        os.mkdir("figs")
+    ####################################################
     # Set the fraction to be used in the smoothing maps
     frac_loess = 0.3
-    ####################################################
-    # Set the name of the table after merging tables
-    ####################################################
-    outtable = "results_halo_h007.dat"
     # Set the background images for contours
     canvas = cv.CanvasImage("vband")
     canvas.data_smooth = ndimage.gaussian_filter(canvas.data, 3, order=0.)
@@ -591,19 +587,6 @@ if __name__ == "__main__":
     canvas_xrays = cv.CanvasImage("xrays")
     canvas_xrays.data_smooth = ndimage.gaussian_filter(canvas_xrays.data, 0.8,
                                                      order=0.)
-    ####################################################
-    # Switch to data folder
-    workdir = os.path.join(home, "single2")
-    os.chdir(workdir)
-    ####################################################
-    # Create folder for output files
-    ####################################################
-    if not os.path.exists("figs"):
-        os.mkdir("figs")
-    #####################################################################
-    # Produces the final table
-    #####################################################################
-    merge_tables()
     #######################################################
     # Use canvas properties to retrieve the id of the slits
     # Set slits to be used: 0-sky 1-halo 2-point sources, 3-HCC007
@@ -618,6 +601,12 @@ if __name__ == "__main__":
     # Positions of the slits
     xy = get_positions_by_slits(slits)
     ###############################################################
+    # Set the name of the table after merging tables
+    ####################################################
+    # Produces the final table
+    outtable = "results.dat"
+    merge_tables()
+    #####################################################################
     # Create polygons
     ###############################################################
     polygons = make_voronoi(xy)
@@ -625,21 +614,13 @@ if __name__ == "__main__":
     s = [x.split("n3311")[1].replace(".fits", "") for x in specs]
     idx = [slits.index(x) for x in s if x in slits]
     polygons_bins =  polygons[idx]
-    #####################################################################
-    # Produces the final table
-    #####################################################################
-    merge_tables()
     ####################################################
-    #Make find chart
-    ####################################################
+    # Make find chart
     # find_chart()
     ####################################################
     # Produce a map with the S/N according to pPXF table
     # make_sn()
     ####################################################
     # Produce maps for all moments
-    make_kinematics() # New routine
-    # make_kin_summary(loess=0, contours="vband", format="png",
-    #                  sn_lims=[0.2,1.,2,2], sn_loess=[20,20,1000,1000],
-    #                 sn_sig=True)
+    # make_kinematics() # New routine
 
