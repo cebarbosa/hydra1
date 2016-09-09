@@ -124,7 +124,8 @@ def merge_polys():
     return np.array(newpolys)
         
 def merge_tables():
-    files = ["ppxf_results.dat", "lick_vdcorr_instres.tsv", "populations_miles.txt",
+    files = ["ppxf_results_best.dat", "lick_vdcorr_instres.tsv",
+             "populations_miles.txt",
              "mc_lick_nsim400.txt",
              os.path.join(tables_dir, "sb_vband_single1.txt"),
              os.path.join(tables_dir, "sb_res_single1.txt")]
@@ -1229,7 +1230,8 @@ def make_imgs():
                       cbar_pos=[0.2, 0.17, 0.25, 0.04], pm=0,
                       ticks=np.linspace(vmins[i], vmaxs[i], 4),
                       cb_fmt=cb_fmts[i])
-        if i == 1:
+        # if i == 1:
+        if False:
             circle = cv.circle_xy(8.4)
             ax.plot(circle[:,0], circle[:,1], "-r", lw=3)
             ax.plot([0,0],[8.4,40], "-r", lw=3)
